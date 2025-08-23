@@ -549,7 +549,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             <tr>
               <td className="border border-black py-2 px-2 text-center" colSpan={4} rowSpan={4}>
                 <div className="flex items-center justify-center h-full">
-                  <img src={QR_SRC} alt="QR Code" className="max-h-56 object-contain" />
+                  <img src={QR_SRC} alt="QR Code" className="max-h-100 object-contain" />
                 </div>
               </td>
               <td className="border border-black py-2 px-2 text-center" colSpan={2}>خصم<br/><small>Discount</small></td>
