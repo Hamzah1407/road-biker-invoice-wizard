@@ -2,10 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Printer, FilePlus2, ArrowLeft, ArrowRight } from "lucide-react";
 
 /**
- * Wizard:
+ * معالج من ثلاث خطوات (Wizard):
  * 1) بيانات العميل
  * 2) البنود
  * 3) المعاينة والطباعة
+ *
+ * - الهيدر داخل كارد بنفس عرض الجدول.
+ * - ربط ثنائي الاتجاه للهاتف/الضريبة/العنوان/السجل بين العربي والإنجليزي عبر onChange.
+ * - إظهار فقط الاسم والهاتف في الخطوة الأولى عندما يكون النوع عرض سعر أو طلب عميل.
+ * - في المعاينة: عرض كامل الحقول للفاتورة فقط.
  */
 
 const DOC_TYPES = [
@@ -45,17 +50,16 @@ export default function ThreeStepInvoiceWizard() {
   const [ar, setAr] = useState({ name: "", phone: "", tax: "", address: "", cr: "" });
   const [en, setEn] = useState({ name: "", phone: "", tax: "", address: "", reg: "" });
 
-  // الربط الفوري بين الحقول النظيرة
-  // (نستخدمه داخل Step1Customer من خلال onChange)
-
   // البنود
   const [rows, setRows] = useState([{ id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]);
   function addRow() { setRows((r) => [...r, { id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]); }
   function removeRow(id) { setRows((r) => (r.length > 1 ? r.filter((x) => x.id !== id) : r)); }
   function updateRow(id, patch) { setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x))); }
 
+  // خصم
   const [discount, setDiscount] = useState("0");
 
+  // رقم المستند حسب النوع أول مرة
   useEffect(() => {
     if (!docNo) {
       const prefix = docType === "quote" ? "Q" : docType === "order" ? "SO" : "INV";
@@ -63,11 +67,12 @@ export default function ThreeStepInvoiceWizard() {
     }
   }, [docType]); // eslint-disable-line
 
+  // الحساب
   const totals = useMemo(() => {
     let totalSubCents = 0; let totalVatCents = 0; let totalGrandCents = 0;
     rows.forEach((row) => {
       const price = num(row.unitPrice); const qty = num(row.qty);
-      const unitVat = Math.round(price * 0.15 * 100) / 100;
+      const unitVat = Math.round(price * 0.15 * 100) / 100; // 15%
       const priceCents = Math.round(price * 100); const vatUnitCents = Math.round(unitVat * 100);
       const rowSubCents = priceCents * qty; const rowVatCents = vatUnitCents * qty; const rowGrandCents = rowSubCents + rowVatCents;
       totalSubCents += rowSubCents; totalVatCents += rowVatCents; totalGrandCents += rowGrandCents;
@@ -119,7 +124,11 @@ export default function ThreeStepInvoiceWizard() {
 
         <div className="page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
           {step === 1 && (
-            <Step1Customer ar={ar} setAr={setAr} en={en} setEn={setEn} />
+            <Step1Customer
+              docType={docType}      // ⬅️ نمرر نوع المستند
+              ar={ar} setAr={setAr}
+              en={en} setEn={setEn}
+            />
           )}
 
           {step === 2 && (
@@ -144,7 +153,7 @@ export default function ThreeStepInvoiceWizard() {
               rows={rows}
               totals={totals}
               printedBy={printedBy}
-              docType={docType}   // ⬅️ نمرّر نوع المستند
+              docType={docType}      // ⬅️ للمعاينة أيضًا
             />
           )}
         </div>
@@ -179,61 +188,123 @@ export default function ThreeStepInvoiceWizard() {
   );
 }
 
-// ========== خطوة 1: بيانات العميل ==========
-function Step1Customer({ ar, setAr, en, setEn }) {
-  // ربط ثنائي الاتجاه فوري
+/* =================== خطوة 1: بيانات العميل =================== */
+function Step1Customer({ docType, ar, setAr, en, setEn }) {
+  const isInvoice = docType === "invoice";
+
+  // ربط ثنائي الاتجاه فوري (يُستخدم على الحقول الظاهرة فقط)
   const linkFromAr = (keyAr, value) => {
     setAr((a) => ({ ...a, [keyAr]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", cr: "reg" };
     const keyEn = map[keyAr];
-    setEn((e) => ({ ...e, [keyEn]: value }));
+    if (keyEn) setEn((e) => ({ ...e, [keyEn]: value }));
   };
   const linkFromEn = (keyEn, value) => {
     setEn((e) => ({ ...e, [keyEn]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", reg: "cr" };
     const keyAr = map[keyEn];
-    setAr((a) => ({ ...a, [keyAr]: value }));
+    if (keyAr) setAr((a) => ({ ...a, [keyAr]: value }));
   };
 
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
+        {/* عربي */}
         <div className="rounded-xl border border-neutral-200 p-4">
           <h3 className="text-sm font-semibold mb-3">بيانات العميل (عربي)</h3>
+
           <FormRow label="الاسم:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.name} onChange={(e)=>setAr({...ar, name:e.target.value})}/>
+            <input
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+              value={ar.name}
+              onChange={(e) => setAr({ ...ar, name: e.target.value })}
+            />
           </FormRow>
+
           <FormRow label="الهاتف:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.phone} onChange={(e)=>linkFromAr("phone", e.target.value)}/>
+            <input
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+              value={ar.phone}
+              onChange={(e) => linkFromAr("phone", e.target.value)}
+            />
           </FormRow>
-          <FormRow label="الرقم الضريبي:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.tax} onChange={(e)=>linkFromAr("tax", e.target.value)}/>
-          </FormRow>
-          <FormRow label="العنوان الوطني:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.address} onChange={(e)=>linkFromAr("address", e.target.value)}/>
-          </FormRow>
-          <FormRow label="السجل التجاري:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.cr} onChange={(e)=>linkFromAr("cr", e.target.value)}/>
-          </FormRow>
+
+          {isInvoice && (
+            <>
+              <FormRow label="الرقم الضريبي:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={ar.tax}
+                  onChange={(e) => linkFromAr("tax", e.target.value)}
+                />
+              </FormRow>
+
+              <FormRow label="العنوان الوطني:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={ar.address}
+                  onChange={(e) => linkFromAr("address", e.target.value)}
+                />
+              </FormRow>
+
+              <FormRow label="السجل التجاري:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={ar.cr}
+                  onChange={(e) => linkFromAr("cr", e.target.value)}
+                />
+              </FormRow>
+            </>
+          )}
         </div>
 
+        {/* English */}
         <div className="rounded-xl border border-neutral-200 p-4">
           <h3 className="text-sm font-semibold mb-3">Customer Details (English)</h3>
+
           <FormRow label="Name:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.name} onChange={(e)=>setEn({...en, name:e.target.value})}/>
+            <input
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+              value={en.name}
+              onChange={(e) => setEn({ ...en, name: e.target.value })}
+            />
           </FormRow>
+
           <FormRow label="Phone:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.phone} onChange={(e)=>linkFromEn("phone", e.target.value)}/>
+            <input
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+              value={en.phone}
+              onChange={(e) => linkFromEn("phone", e.target.value)}
+            />
           </FormRow>
-          <FormRow label="Tax No:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.tax} onChange={(e)=>linkFromEn("tax", e.target.value)}/>
-          </FormRow>
-          <FormRow label="Address:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.address} onChange={(e)=>linkFromEn("address", e.target.value)}/>
-          </FormRow>
-          <FormRow label="Reg. No:">
-            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.reg} onChange={(e)=>linkFromEn("reg", e.target.value)}/>
-          </FormRow>
+
+          {isInvoice && (
+            <>
+              <FormRow label="Tax No:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={en.tax}
+                  onChange={(e) => linkFromEn("tax", e.target.value)}
+                />
+              </FormRow>
+
+              <FormRow label="Address:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={en.address}
+                  onChange={(e) => linkFromEn("address", e.target.value)}
+                />
+              </FormRow>
+
+              <FormRow label="Reg. No:">
+                <input
+                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                  value={en.reg}
+                  onChange={(e) => linkFromEn("reg", e.target.value)}
+                />
+              </FormRow>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -249,7 +320,7 @@ function FormRow({ label, children }) {
   );
 }
 
-// ========== خطوة 2: البنود ==========
+/* =================== خطوة 2: البنود =================== */
 function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount }) {
   return (
     <div className="space-y-4">
@@ -301,7 +372,7 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
   );
 }
 
-// ========== خطوة 3: المعاينة/الطباعة ==========
+/* =================== خطوة 3: المعاينة/الطباعة =================== */
 function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, printedBy, docType }) {
   const isInvoice = docType === "invoice";
 
