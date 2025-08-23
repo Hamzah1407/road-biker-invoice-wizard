@@ -6,12 +6,6 @@ import { Plus, Trash2, Printer, FilePlus2, ArrowRight } from "lucide-react";
  * 1) بيانات العميل
  * 2) البنود
  * 3) المعاينة والطباعة
- *
- * - الهيدر داخل كارد بنفس عرض الجدول (مخفي في الخطوة 3).
- * - ربط ثنائي للهاتف/الضريبة/العنوان/السجل بين العربي والإنجليزي.
- * - في الخطوة 1: لعرض السعر/طلب عميل يظهر فقط الاسم والهاتف. للفاتورة تظهر كل الحقول.
- * - المعاينة: EN يسار / Logo أكبر / AR يمين، وإزالة الإطار عن الميتا وتفاصيل العميل، وQR أكبر.
- * - الأزرار: السابق أحمر، التالي أخضر، بعرض الكارد. (لا يوجد زر تعديل)
  */
 
 const DOC_TYPES = [
@@ -87,7 +81,15 @@ export default function ThreeStepInvoiceWizard() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-neutral-100 text-neutral-900 py-6">
-      <style>{`@media print{.no-print{display:none!important} th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} .page{box-shadow:none!important}}`}</style>
+      <style>{`
+        @media print {
+          .no-print{display:none!important}
+          html,body{background:#fff!important}
+          .bg-neutral-100{background:#fff!important}
+          .page{box-shadow:none!important;border:none!important}
+          th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        }
+      `}</style>
 
       <div className="max-w-6xl mx-auto px-4 space-y-4">
         {/* الشريط العلوي لا يظهر في خطوة المعاينة */}
@@ -164,7 +166,6 @@ export default function ThreeStepInvoiceWizard() {
         {/* أزرار التحكم */}
         <div className="no-print w-full">
           {step < 3 ? (
-            // السابق + التالي على كامل العرض
             <div className="grid grid-cols-2 gap-3 w-full">
               <button
                 disabled={step === 1}
@@ -184,7 +185,6 @@ export default function ThreeStepInvoiceWizard() {
               </button>
             </div>
           ) : (
-            // في الخطوة الثالثة: السابق + طباعة فقط (لا يوجد تعديل)
             <div className="grid grid-cols-2 gap-3 w-full">
               <button
                 onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
@@ -211,7 +211,7 @@ export default function ThreeStepInvoiceWizard() {
 function Step1Customer({ docType, ar, setAr, en, setEn }) {
   const isInvoice = docType === "invoice";
 
-  // ربط ثنائي الاتجاه فوري (للحقل النظير)
+  // ربط ثنائي الاتجاه فوري
   const linkFromAr = (keyAr, value) => {
     setAr((a) => ({ ...a, [keyAr]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", cr: "reg" };
@@ -365,9 +365,9 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
 
   return (
     <article className="invoice space-y-5">
-      {/* Header: EN يسار / Logo أكبر / AR يمين */}
+      {/* Header: نستخدم dir="ltr" على الحاوية لضمان ترتيب يسار>وسط>يمين */}
       <div className="border border-black p-3 bg-white">
-        <div className="grid grid-cols-3 gap-2 items-start">
+        <div className="grid grid-cols-3 gap-2 items-start" dir="ltr">
           {/* EN Left */}
           <div className="text-left" dir="ltr">
             <div className="text-rose-600 font-semibold">Road Biker Motorcycles</div>
@@ -380,7 +380,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             <img src={LOGO_SRC} alt="Logo" className="inline-block max-h-20 object-contain" />
           </div>
           {/* AR Right */}
-          <div className="text-right">
+          <div className="text-right" dir="rtl">
             <div className="text-rose-600 font-semibold">رود بايكر للدراجات النارية</div>
             <div className="text-xs mt-1"><span className="font-semibold">العنوان الرئيسي :</span> حائل - طريق النصيبية</div>
             <div className="text-xs"><span className="font-semibold">الرقم الضريبي :</span> 301294984200003</div>
@@ -389,40 +389,30 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* Meta + Title — بدون إطار */}
+      {/* Meta + Title — بدون إطار، مع ترتيب EN يسار / العنوان وسط / AR يمين */}
       <div className="p-3 bg-white">
-        <div className="grid grid-cols-3 items-start">
-          {/* AR Right */}
-          <div className="text-sm text-right">
-            <div><span className="font-semibold">رقم الفاتورة:</span> {docNo}</div>
-            <div><span className="font-semibold">تاريخ الفاتورة:</span> {docDate}</div>
-            <div><span className="font-semibold">العملة:</span> {currency}</div>
-          </div>
-          <div className="text-center text-rose-600 font-semibold">{title}</div>
+        <div className="grid grid-cols-3 items-start" dir="ltr">
           {/* EN Left */}
-          <div className="text-sm" dir="ltr">
+          <div className="text-sm text-left" dir="ltr">
             <div><span className="font-semibold">Invoice No:</span> {docNo}</div>
             <div><span className="font-semibold">Invoice Date:</span> {docDate}</div>
             <div><span className="font-semibold">Currency:</span> {currency}</div>
+          </div>
+          <div className="text-center text-rose-600 font-semibold">{title}</div>
+          {/* AR Right */}
+          <div className="text-sm text-right" dir="rtl">
+            <div><span className="font-semibold">رقم الفاتورة:</span> {docNo}</div>
+            <div><span className="font-semibold">تاريخ الفاتورة:</span> {docDate}</div>
+            <div><span className="font-semibold">العملة:</span> {currency}</div>
           </div>
         </div>
       </div>
 
       {/* تفاصيل العميل — بدون إطار */}
       <div className="p-3 bg-white">
-        <div className="grid grid-cols-2 gap-6">
-          <div className="text-sm space-y-1 text-right">
-            <div><span className="font-semibold">الاسم:</span> {ar.name || "—"}</div>
-            <div><span className="font-semibold">الهاتف:</span> {ar.phone || "—"}</div>
-            {isInvoice && (
-              <>
-                <div><span className="font-semibold">الرقم الضريبي:</span> {ar.tax || "—"}</div>
-                <div><span className="font-semibold">العنوان الوطني:</span> {ar.address || "—"}</div>
-                <div><span className="font-semibold">السجل التجاري:</span> {ar.cr || "—"}</div>
-              </>
-            )}
-          </div>
-          <div className="text-sm space-y-1" dir="ltr">
+        <div className="grid grid-cols-2 gap-6" dir="ltr">
+          {/* EN Left */}
+          <div className="text-sm space-y-1 text-left" dir="ltr">
             <div><span className="font-semibold">Name:</span> {en.name || "—"}</div>
             <div><span className="font-semibold">Phone:</span> {en.phone || "—"}</div>
             {isInvoice && (
@@ -430,6 +420,18 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
                 <div><span className="font-semibold">Tax No:</span> {en.tax || "—"}</div>
                 <div><span className="font-semibold">Address:</span> {en.address || "—"}</div>
                 <div><span className="font-semibold">Reg. No:</span> {en.reg || "—"}</div>
+              </>
+            )}
+          </div>
+          {/* AR Right */}
+          <div className="text-sm space-y-1 text-right" dir="rtl">
+            <div><span className="font-semibold">الاسم:</span> {ar.name || "—"}</div>
+            <div><span className="font-semibold">الهاتف:</span> {ar.phone || "—"}</div>
+            {isInvoice && (
+              <>
+                <div><span className="font-semibold">الرقم الضريبي:</span> {ar.tax || "—"}</div>
+                <div><span className="font-semibold">العنوان الوطني:</span> {ar.address || "—"}</div>
+                <div><span className="font-semibold">السجل التجاري:</span> {ar.cr || "—"}</div>
               </>
             )}
           </div>
@@ -488,10 +490,10 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </table>
       </div>
 
-      {/* Footer — EN يسار / AR يمين */}
+      {/* Footer — بدون إطار: EN يسار / AR يمين */}
       <div className="p-3 bg-white">
-        <div className="grid grid-cols-2 gap-6 text-sm">
-          <div dir="ltr" className="text-left">
+        <div className="grid grid-cols-2 gap-6 text-sm" dir="ltr">
+          <div className="text-left" dir="ltr">
             <span className="font-semibold">Printed by:</span> {printedBy}<br/>
             <span className="font-semibold">Invoice date:</span> {docDate}<br/>
             <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
@@ -499,7 +501,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
               Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right" dir="rtl">
             <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
             <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
             <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
