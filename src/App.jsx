@@ -124,7 +124,7 @@ export default function ThreeStepInvoiceWizard() {
         {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
+            <label className="text-xs text-neutral-600 text-center"></label>
             <input
               value={docNo}
               onChange={(e) => setDocNo(e.target.value)}
@@ -132,7 +132,7 @@ export default function ThreeStepInvoiceWizard() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
+            <label className="text-xs text-neutral-600 text-center"></label>
             {/* مدخل نصّي بدل date */}
             <input
               value={docDate}
@@ -142,7 +142,7 @@ export default function ThreeStepInvoiceWizard() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
+            <label className="text-xs text-neutral-600 text-center"></label>
             <input
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
