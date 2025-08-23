@@ -53,32 +53,36 @@ export default function ThreeStepInvoiceWizard() {
   const [ar, setAr] = useState({ name: "", phone: "", tax: "", address: "", cr: "" });
   const [en, setEn] = useState({ name: "", phone: "", tax: "", address: "", reg: "" });
 
-  // مزامنة بسيطة من العربي للإنجليزي عندما تكون فارغة
-  useEffect(() => {
-    setEn((e) => ({
-      ...e,
-      phone: ar.phone && !e.phone ? ar.phone : e.phone,
-      tax: ar.tax && !e.tax ? ar.tax : e.tax,
-      reg: ar.cr && !e.reg ? ar.cr : e.reg,
-    }));
-  }, [ar.phone, ar.tax, ar.cr]);
+// مزامنة AR -> EN إذا الحقول الإنجليزية فاضية
+useEffect(() => {
+  setEn((e) => {
+    const next = { ...e };
+    if (!e.phone   && ar.phone)   next.phone   = ar.phone;
+    if (!e.tax     && ar.tax)     next.tax     = ar.tax;
+    if (!e.address && ar.address) next.address = ar.address; // العنوان الوطني
+    if (!e.reg     && ar.cr)      next.reg     = ar.cr;      // السجل التجاري
+    const changed =
+      next.phone !== e.phone || next.tax !== e.tax ||
+      next.address !== e.address || next.reg !== e.reg;
+    return changed ? next : e; // ما يغيّر الحالة إذا ما صار تغيير فعلي
+  });
+}, [ar.phone, ar.tax, ar.address, ar.cr]);
 
-  // البنود
-  const [rows, setRows] = useState([{ id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]);
-  function addRow() { setRows((r) => [...r, { id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]); }
-  function removeRow(id) { setRows((r) => (r.length > 1 ? r.filter((x) => x.id !== id) : r)); }
-  function updateRow(id, patch) { setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x))); }
+// مزامنة EN -> AR إذا الحقول العربية فاضية
+useEffect(() => {
+  setAr((a) => {
+    const next = { ...a };
+    if (!a.phone   && en.phone)   next.phone   = en.phone;
+    if (!a.tax     && en.tax)     next.tax     = en.tax;
+    if (!a.address && en.address) next.address = en.address; // Address -> العنوان الوطني
+    if (!a.cr      && en.reg)     next.cr      = en.reg;     // Reg. No -> السجل التجاري
+    const changed =
+      next.phone !== a.phone || next.tax !== a.tax ||
+      next.address !== a.address || next.cr !== a.cr;
+    return changed ? next : a;
+  });
+}, [en.phone, en.tax, en.address, en.reg]);
 
-  // خصم
-  const [discount, setDiscount] = useState("0");
-
-  // توليد رقم المستند أول مرة حسب النوع
-  useEffect(() => {
-    if (!docNo) {
-      const prefix = docType === "quote" ? "Q" : docType === "order" ? "SO" : "INV";
-      setDocNo(nextDocNo(prefix));
-    }
-  }, [docType]);
 
   // الحساب (منطق الهللات)
   const totals = useMemo(() => {
@@ -124,7 +128,7 @@ export default function ThreeStepInvoiceWizard() {
         {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600">Invoice No</label>
+            <label className="text-xs text-neutral-600"></label>
             <input
               value={docNo}
               onChange={(e) => setDocNo(e.target.value)}
@@ -132,7 +136,7 @@ export default function ThreeStepInvoiceWizard() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600">Invoice Date</label>
+            <label className="text-xs text-neutral-600"></label>
             {/* مدخل نصّي بدل date */}
             <input
               value={docDate}
@@ -142,7 +146,7 @@ export default function ThreeStepInvoiceWizard() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600">Currency</label>
+            <label className="text-xs text-neutral-600"></label>
             <input
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
