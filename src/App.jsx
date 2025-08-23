@@ -560,7 +560,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
               <td className="border border-black py-2 px-2 text-center">{fromCents(totals.subtotalCents)}</td>
             </tr>
             <tr>
-              <td className="border border-black py-2 px-2 text-center" colSpan={2}>ضريبة القيمة المضافة 15%<br/><small>VAT 15%</small></td>
+              <td className="border border-black py-2 px-2 text-center" colSpan={2}>ضريبة القيمة المضافة<br/><small>VAT 15%</small></td>
               <td className="border border-black py-2 px-2 text-center">{fromCents(totals.vatCents)}</td>
             </tr>
             <tr>
