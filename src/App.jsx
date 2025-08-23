@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Printer, FilePlus2, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Printer, FilePlus2, ArrowRight } from "lucide-react";
 
 /**
- * معالج من ثلاث خطوات (Wizard):
+ * Wizard:
  * 1) بيانات العميل
  * 2) البنود
  * 3) المعاينة والطباعة
  *
- * - الهيدر داخل كارد بنفس عرض الجدول.
- * - ربط ثنائي الاتجاه للهاتف/الضريبة/العنوان/السجل بين العربي والإنجليزي عبر onChange.
- * - إظهار فقط الاسم والهاتف في الخطوة الأولى عندما يكون النوع عرض سعر أو طلب عميل.
- * - في المعاينة: عرض كامل الحقول للفاتورة فقط.
+ * - الهيدر داخل كارد بنفس عرض الجدول (مخفي في الخطوة 3).
+ * - ربط ثنائي للهاتف/الضريبة/العنوان/السجل بين العربي والإنجليزي.
+ * - في الخطوة 1: لعرض السعر/طلب عميل يظهر فقط الاسم والهاتف. للفاتورة تظهر كل الحقول.
+ * - المعاينة: EN يسار / Logo أكبر / AR يمين، وإزالة الإطار عن الميتا وتفاصيل العميل، وQR أكبر.
+ * - الأزرار: السابق أحمر، التالي أخضر، بعرض الكارد. (لا يوجد زر تعديل)
  */
 
 const DOC_TYPES = [
@@ -89,43 +90,45 @@ export default function ThreeStepInvoiceWizard() {
       <style>{`@media print{.no-print{display:none!important} th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} .page{box-shadow:none!important}}`}</style>
 
       <div className="max-w-6xl mx-auto px-4 space-y-4">
-        {/* الهيدر */}
-        <div className="no-print page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-          <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
-              {DOC_TYPES.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => setDocType(d.id)}
-                  className={`px-4 h-10 rounded-xl text-sm transition ${docType === d.id ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"}`}
-                >
-                  {d.label}
-                </button>
-              ))}
+        {/* الشريط العلوي لا يظهر في خطوة المعاينة */}
+        {step !== 3 && (
+          <div className="no-print page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+            <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
+                {DOC_TYPES.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setDocType(d.id)}
+                    className={`px-4 h-10 rounded-xl text-sm transition ${docType === d.id ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"}`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
+                <div className="flex items-center gap-2">
+                  <input value={docNo} onChange={(e) => setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input value={docDate} onChange={(e) => setDocDate(e.target.value)} placeholder="yyyy / m / d" className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center" />
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
-              <div className="flex items-center gap-2">
-                <input value={docNo} onChange={(e) => setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center" />
-              </div>
-              <div className="flex items-center gap-2">
-                <input value={docDate} onChange={(e) => setDocDate(e.target.value)} placeholder="yyyy / m / d" className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center" />
-              </div>
-              <div className="flex items-center gap-2">
-                <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center" />
-              </div>
+            <div className="mt-2 flex items-center">
+              <div className="ms-auto text-sm text-neutral-500">Step {step} / 3</div>
             </div>
           </div>
-
-          <div className="mt-2 flex items-center">
-            <div className="ms-auto text-sm text-neutral-500">Step {step} / 3</div>
-          </div>
-        </div>
+        )}
 
         <div className="page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
           {step === 1 && (
             <Step1Customer
-              docType={docType}      // ⬅️ نمرر نوع المستند
+              docType={docType}
               ar={ar} setAr={setAr}
               en={en} setEn={setEn}
             />
@@ -153,72 +156,62 @@ export default function ThreeStepInvoiceWizard() {
               rows={rows}
               totals={totals}
               printedBy={printedBy}
-              docType={docType}      // ⬅️ للمعاينة أيضًا
+              docType={docType}
             />
           )}
         </div>
 
         {/* أزرار التحكم */}
-       {/* أزرار التحكم */}
-<div className="no-print w-full">
-  {step < 3 ? (
-    // السابق + التالي على كامل العرض
-    <div className="grid grid-cols-2 gap-3 w-full">
-      <button
-        disabled={step === 1}
-        onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-        className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
-                   hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ArrowRight size={18} /> السابق
-      </button>
+        <div className="no-print w-full">
+          {step < 3 ? (
+            // السابق + التالي على كامل العرض
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button
+                disabled={step === 1}
+                onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+                className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
+                           hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowRight size={18} /> السابق
+              </button>
 
-      <button
-        onClick={() => setStep((s) => s + 1)}
-        className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
-                   hover:bg-green-700"
-      >
-        التالي <FilePlus2 size={18} />
-      </button>
-    </div>
-  ) : (
-    // في الخطوة الثالثة: السابق باللون الأحمر مع أزرار الطباعة/التعديل في العمود الثاني
-    <div className="grid grid-cols-2 gap-3 w-full">
-      <button
-        onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-        className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
-      >
-        <ArrowRight size={18} /> السابق
-      </button>
+              <button
+                onClick={() => setStep((s) => s + 1)}
+                className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
+                           hover:bg-green-700"
+              >
+                التالي <FilePlus2 size={18} />
+              </button>
+            </div>
+          ) : (
+            // في الخطوة الثالثة: السابق + طباعة فقط (لا يوجد تعديل)
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button
+                onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+                className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
+              >
+                <ArrowRight size={18} /> السابق
+              </button>
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => window.print()}
-          className="flex-1 h-12 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center justify-center gap-2"
-        >
-          <Printer size={18} /> طباعة
-        </button>
-        <button
-          onClick={() => setStep(1)}
-          className="flex-1 h-12 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50 flex items-center justify-center gap-2"
-        >
-          <ArrowLeft size={18} /> تعديل
-        </button>
-      </div>
-    </div>
-  )}
-</div>
-
+              <button
+                onClick={() => window.print()}
+                className="h-12 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center justify-center gap-2"
+              >
+                <Printer size={18} /> طباعة
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// ========= خطوة 1: بيانات العميل =========
+/* =================== خطوة 1: بيانات العميل =================== */
 function Step1Customer({ docType, ar, setAr, en, setEn }) {
   const isInvoice = docType === "invoice";
 
-  // ربط ثنائي الاتجاه فوري
+  // ربط ثنائي الاتجاه فوري (للحقل النظير)
   const linkFromAr = (keyAr, value) => {
     setAr((a) => ({ ...a, [keyAr]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", cr: "reg" };
@@ -303,7 +296,6 @@ function Step1Customer({ docType, ar, setAr, en, setEn }) {
   );
 }
 
-
 function FormRow({ label, children, labelAlign = "right" }) {
   return (
     <div className="grid grid-cols-3 items-center gap-3 py-1.5">
@@ -314,7 +306,6 @@ function FormRow({ label, children, labelAlign = "right" }) {
     </div>
   );
 }
-
 
 /* =================== خطوة 2: البنود =================== */
 function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount }) {
@@ -374,19 +365,22 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
 
   return (
     <article className="invoice space-y-5">
-      {/* Header */}
+      {/* Header: EN يسار / Logo أكبر / AR يمين */}
       <div className="border border-black p-3 bg-white">
-        <div className="flex items-start justify-between">
-          <div className="w-1/3 text-left" dir="ltr">
+        <div className="grid grid-cols-3 gap-2 items-start">
+          {/* EN Left */}
+          <div className="text-left" dir="ltr">
             <div className="text-rose-600 font-semibold">Road Biker Motorcycles</div>
             <div className="text-xs mt-1"><span className="font-semibold">Address:</span> Hail - Al-Naisiyah Road</div>
             <div className="text-xs"><span className="font-semibold">Tax Number:</span> 301294984200003</div>
             <div className="text-xs"><span className="font-semibold">Phone Number:</span> 0500123007</div>
           </div>
-          <div className="w-1/3 text-center">
-            <img src={LOGO_SRC} alt="Logo" className="inline-block max-h-16 object-contain" />
+          {/* Logo Center — أكبر */}
+          <div className="text-center">
+            <img src={LOGO_SRC} alt="Logo" className="inline-block max-h-20 object-contain" />
           </div>
-          <div className="w-1/3 text-right">
+          {/* AR Right */}
+          <div className="text-right">
             <div className="text-rose-600 font-semibold">رود بايكر للدراجات النارية</div>
             <div className="text-xs mt-1"><span className="font-semibold">العنوان الرئيسي :</span> حائل - طريق النصيبية</div>
             <div className="text-xs"><span className="font-semibold">الرقم الضريبي :</span> 301294984200003</div>
@@ -395,15 +389,17 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* Meta + Title */}
-      <div className="border border-black p-3 bg-white">
+      {/* Meta + Title — بدون إطار */}
+      <div className="p-3 bg-white">
         <div className="grid grid-cols-3 items-start">
+          {/* AR Right */}
           <div className="text-sm text-right">
             <div><span className="font-semibold">رقم الفاتورة:</span> {docNo}</div>
             <div><span className="font-semibold">تاريخ الفاتورة:</span> {docDate}</div>
             <div><span className="font-semibold">العملة:</span> {currency}</div>
           </div>
           <div className="text-center text-rose-600 font-semibold">{title}</div>
+          {/* EN Left */}
           <div className="text-sm" dir="ltr">
             <div><span className="font-semibold">Invoice No:</span> {docNo}</div>
             <div><span className="font-semibold">Invoice Date:</span> {docDate}</div>
@@ -412,8 +408,8 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* تفاصيل العميل */}
-      <div className="border border-black p-3 bg-white">
+      {/* تفاصيل العميل — بدون إطار */}
+      <div className="p-3 bg-white">
         <div className="grid grid-cols-2 gap-6">
           <div className="text-sm space-y-1 text-right">
             <div><span className="font-semibold">الاسم:</span> {ar.name || "—"}</div>
@@ -440,7 +436,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* الجدول + الإجماليات + QR */}
+      {/* الجدول + الإجماليات + QR — QR أكبر */}
       <div className="bg-white">
         <table className="w-full text-sm border border-black">
           <thead>
@@ -470,7 +466,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             <tr>
               <td className="border border-black py-2 px-2 text-center" colSpan={4} rowSpan={4}>
                 <div className="flex items-center justify-center h-full">
-                  <img src={QR_SRC} alt="QR Code" className="max-h-40 object-contain" />
+                  <img src={QR_SRC} alt="QR Code" className="max-h-56 object-contain" />
                 </div>
               </td>
               <td className="border border-black py-2 px-2 text-center" colSpan={2}>خصم<br/><small>Discount</small></td>
@@ -492,20 +488,24 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </table>
       </div>
 
-      {/* Footer */}
-      <div className="border border-black p-3 bg-white">
+      {/* Footer — EN يسار / AR يمين */}
+      <div className="p-3 bg-white">
         <div className="grid grid-cols-2 gap-6 text-sm">
-          <div dir="ltr">
+          <div dir="ltr" className="text-left">
             <span className="font-semibold">Printed by:</span> {printedBy}<br/>
             <span className="font-semibold">Invoice date:</span> {docDate}<br/>
             <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
-            <div className="text-rose-600 mt-2">Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.</div>
+            <div className="text-rose-600 mt-2">
+              Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.
+            </div>
           </div>
           <div className="text-right">
             <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
             <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
             <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
-            <div className="text-rose-600 mt-2">يغطي الضمان عيوب التصنيع على المكينة فقط ولمدة 6 اشهر من تاريخ الفاتورة</div>
+            <div className="text-rose-600 mt-2">
+              يغطي الضمان عيوب التصنيع على المكينة فقط ولمدة 6 اشهر من تاريخ الفاتورة
+            </div>
           </div>
         </div>
       </div>
