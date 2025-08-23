@@ -319,30 +319,64 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border border-neutral-300 rounded-xl overflow-hidden">
+        <table className="w-full text-sm border border-neutral-300 rounded-xl overflow-hidden table-fixed">
+          <colgroup>
+            <col style={{ width: "4%" }} />   {/* # */}
+            <col style={{ width: "14%" }} />  {/* Item No */}
+            <col style={{ width: "36%" }} />  {/* Item Name */}
+            <col style={{ width: "10%" }} />  {/* Unit */}
+            <col style={{ width: "10%" }} />  {/* Qty */}
+            <col style={{ width: "13%" }} />  {/* Unit Price */}
+            <col style={{ width: "13%" }} />  {/* Total */}
+            <col style={{ width: "6%" }} />   {/* Delete */}
+          </colgroup>
           <thead>
             <tr className="bg-neutral-50 text-neutral-700">
-              <th className="print-bg text-right py-2 px-3 w-10">#</th>
-              <th className="print-bg text-right py-2 px-3 w-40">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
+              <th className="print-bg text-right py-2 px-3">#</th>
+              <th className="print-bg text-right py-2 px-3">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
               <th className="print-bg text-right py-2 px-3">اسم الصنف<br/><small className="text-xs text-neutral-500">Item Name</small></th>
-              <th className="print-bg text-right py-2 px-3 w-32">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small></th>
-              <th className="print-bg text-right py-2 px-3 w-28">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
-              <th className="print-bg text-right py-2 px-3 w-36">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
-              <th className="print-bg text-right py-2 px-3 w-36">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
-              <th className="print-bg text-right py-2 px-3 w-12">—</th>
+              <th className="print-bg text-right py-2 px-3">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small></th>
+              <th className="print-bg text-right py-2 px-3">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
+              <th className="print-bg text-right py-2 px-3">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
+              <th className="print-bg text-right py-2 px-3">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
+              <th className="print-bg text-right py-2 px-3">—</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, idx) => (
               <tr key={r.id} className="border-t border-neutral-200">
                 <td className="py-2 px-3">{idx + 1}</td>
-                <td className="py-2 px-3"><input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
-                <td className="py-2 px-3"><input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
-                <td className="py-2 px-3 w-32"><input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
-                <td className="py-2 px-3 w-28"><input type="number" min={0} value={r.qty} onChange={(e)=>updateRow(r.id,{qty:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
-                <td className="py-2 px-3 w-36"><input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
-                <td className="py-2 px-3 w-36">{fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}</td>
-                <td className="py-2 px-3 w-12"><button onClick={()=>removeRow(r.id)} className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50"><Trash2 size={16}/></button></td>
+                <td className="py-2 px-3">
+                  <input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})}
+                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                </td>
+                <td className="py-2 px-3">
+                  <input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})}
+                         className="h-10 w-full rounded border border-neutral-300 px-3 text-right"/>
+                </td>
+                <td className="py-2 px-3 w-32">
+                  <input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})}
+                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                </td>
+                <td className="py-2 px-3 w-28">
+                  <input type="number" min={0} value={r.qty}
+                         onChange={(e)=>updateRow(r.id,{qty:e.target.value})}
+                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                </td>
+                <td className="py-2 px-3 w-36">
+                  <input type="number" min={0} step="0.01" value={r.unitPrice}
+                         onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})}
+                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                </td>
+                <td className="py-2 px-3 w-36">
+                  {fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}
+                </td>
+                <td className="py-2 px-3 w-12">
+                  <button onClick={()=>removeRow(r.id)}
+                          className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50">
+                    <Trash2 size={16}/>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -350,14 +384,18 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"><Plus size={16} className="inline ms-1"/> إضافة صف</button>
+        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
+          <Plus size={16} className="inline ms-1"/> إضافة صف
+        </button>
       </div>
 
       <div className="rounded-xl border border-neutral-200 p-4 text-sm max-w-md ms-auto">
         <div className="flex items-center justify-between">
           <div className="text-neutral-700">خصم <span className="text-xs text-neutral-500">Discount</span></div>
           <div className="flex items-center gap-2">
-            <input type="number" min={0} step="0.01" value={discount} onChange={(e)=>setDiscount(e.target.value)} className="h-10 w-32 rounded border border-neutral-300 px-3"/>
+            <input type="number" min={0} step="0.01" value={discount}
+                   onChange={(e)=>setDiscount(e.target.value)}
+                   className="h-10 w-32 rounded border border-neutral-300 px-3"/>
             <span className="text-neutral-500">SAR</span>
           </div>
         </div>
@@ -383,7 +421,6 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
       return { showWarranty: false, arText: "", enText: "" };
     }
 
-    // إذا كلها مشمولة فقط → النص المعتاد
     if (!hasOther) {
       return {
         showWarranty: true,
@@ -392,7 +429,6 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
       };
     }
 
-    // إذا وُجدت أصناف أخرى غير مشمولة → نذكر فقط الأكواد المشمولة الموجودة فعليًا
     const presentCodesOriginal = rows
       .map((r) => r.itemNo)
       .filter((x) => WARRANTY_CODES_UPPER.includes(normalize(x)));
@@ -477,18 +513,27 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* الجدول + الإجماليات + QR */}
+      {/* الجدول + الإجماليات + QR — أعمدة مثبّتة، واسم الصنف أوسع */}
       <div className="bg-white">
-        <table className="w-full text-sm border border-black">
+        <table className="w-full text-sm border border-black table-fixed">
+          <colgroup>
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "36%" }} /> {/* اسم الصنف */}
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "13%" }} />
+          </colgroup>
           <thead>
             <tr>
-              <th className="print-bg border border-black py-2 px-2 w-10">#</th>
-              <th className="print-bg border border-black py-2 px-2 w-40">رقم الصنف<br/><small>Item No</small></th>
-              <th className="print-bg border border-black py-2 px-2">اسم الصنف<br/><small>Item Name</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-28">الوحدة<br/><small>Unit</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-28">الكمية<br/><small>Quantity</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-36">سعر الوحدة<br/><small>Unit Price</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-36">الإجمالي<br/><small>Total</small></th>
+              <th className="print-bg border border-black py-2 px-2">#</th>
+              <th className="print-bg border border-black py-2 px-2">رقم الصنف<br/><small>Item No</small></th>
+              <th className="print-bg border border-black py-2 px-3 text-right">اسم الصنف<br/><small>Item Name</small></th>
+              <th className="print-bg border border-black py-2 px-2">الوحدة<br/><small>Unit</small></th>
+              <th className="print-bg border border-black py-2 px-2">الكمية<br/><small>Quantity</small></th>
+              <th className="print-bg border border-black py-2 px-2">سعر الوحدة<br/><small>Unit Price</small></th>
+              <th className="print-bg border border-black py-2 px-2">الإجمالي<br/><small>Total</small></th>
             </tr>
           </thead>
           <tbody>
@@ -496,7 +541,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
               <tr key={r.id}>
                 <td className="border border-black py-2 px-2 text-center">{idx+1}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.itemNo || "—"}</td>
-                <td className="border border-black py-2 px-2 text-center">{r.itemName || "—"}</td>
+                <td className="border border-black py-2 px-3 text-right">{r.itemName || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.unit || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.qty || "0"}</td>
                 <td className="border border-black py-2 px-2 text-center">{(num(r.unitPrice)||0).toFixed(2)}</td>
