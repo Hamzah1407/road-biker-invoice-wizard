@@ -29,13 +29,18 @@ function num(v) { const n = parseFloat(String(v)); return isNaN(n) ? 0 : n; }
 const toCents = (v) => Math.round(v * 100);
 const fromCents = (c) => (c / 100).toFixed(2);
 function todayISO() { return new Date().toISOString().slice(0, 10); }
-function nextDocNo(prefix) {
+
+function nextInvoiceNo() {
   try {
-    const key = "rtl_doc_seq_v6";
-    const seq = Number(localStorage.getItem(key) || "0");
-    localStorage.setItem(key, String(seq + 1));
-    return `${prefix}-${new Date().getFullYear()}${String(seq).padStart(4, "0")}`;
-  } catch { return `${prefix}-${Date.now()}`; }
+    const BASE = "25110014";                 // البداية الثابتة
+    const KEY = `invoiceSeq_${BASE}`;        // مفتاح التخزين
+    const seq = parseInt(localStorage.getItem(KEY) || "0", 10);
+    const no = BASE + String(seq).padStart(3, "0"); // 25110014000, 001, 002...
+    localStorage.setItem(KEY, String(seq + 1));
+    return no;
+  } catch {
+    return "25110014" + String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  }
 }
 
 const VAT_RATE = 0.15;
@@ -45,7 +50,7 @@ export default function ThreeStepInvoiceWizard() {
   const [docType, setDocType] = useState("invoice");
 
   // ميتا
-  const [docNo, setDocNo] = useState("");
+  const [docNo, setDocNo] = useState(() => nextInvoiceNo());
   const [docDate, setDocDate] = useState(todayISO());
   const [currency, setCurrency] = useState("SAR");
   const [printedBy] = useState("Abu Kadi");
@@ -63,14 +68,6 @@ export default function ThreeStepInvoiceWizard() {
   // خصم
   const [discount, setDiscount] = useState("0");
 
-  // رقم المستند حسب النوع أول مرة
-  useEffect(() => {
-    if (!docNo) {
-      const prefix = docType === "quote" ? "Q" : docType === "order" ? "SO" : "INV";
-      setDocNo(nextDocNo(prefix));
-    }
-  }, [docType]); // eslint-disable-line
-
   // الحساب: سعر الوحدة مُدخل شامل ضريبة 15%
   const totals = useMemo(() => {
     let inclusiveCents = 0; // إجمالي شامل الضريبة
@@ -81,7 +78,7 @@ export default function ThreeStepInvoiceWizard() {
     });
 
     const subtotalCents = Math.round(inclusiveCents / (1 + VAT_RATE)); // قبل الضريبة
-    const vatCents = inclusiveCents - subtotalCents;                    // الضريبة المستخرجة
+    const vatCents = inclusiveCents - subtotalCents;                    // الضريبة
     const discountCents = toCents(num(discount));
     const finalCents = Math.max(subtotalCents + vatCents - discountCents, 0); // النهائي
 
@@ -127,13 +124,13 @@ export default function ThreeStepInvoiceWizard() {
 
               <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
                 <div className="flex items-center gap-2">
-                  <input value={docNo} onChange={(e) => setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center" />
+                  <input value={docNo} onChange={(e) => setDocNo(e.target.value)} className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center" />
                 </div>
                 <div className="flex items-center gap-2">
                   <input value={docDate} onChange={(e) => setDocDate(e.target.value)} placeholder="yyyy / m / d" className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center" />
+                  <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="h-10 w-32 rounded-xl border border-neutral-300 px-3 text-center" />
                 </div>
               </div>
             </div>
@@ -452,7 +449,8 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             <div className="text-xs"><span className="font-semibold">Phone Number:</span> 0500123007</div>
           </div>
           <div className="text-center">
-            <img src={LOGO_SRC} alt="Logo" className="inline-block max-h-20 object-contain" />
+            {/* شعار أكبر */}
+            <img src={LOGO_SRC} alt="Logo" className="inline-block object-contain" style={{ maxHeight: 96 }} />
           </div>
           <div className="text-right" dir="rtl">
             <div className="text-rose-600 font-semibold">رود بايكر للدراجات النارية</div>
@@ -508,7 +506,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* الجدول + الإجماليات + QR — عناوين وسط، Item No أضيق */}
+      {/* الجدول + الإجماليات + QR */}
       <div className="bg-white">
         <table className="w-full text-sm border border-black table-fixed">
           <colgroup>
@@ -549,7 +547,8 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             <tr>
               <td className="border border-black py-2 px-2 text-center" colSpan={4} rowSpan={4}>
                 <div className="flex items-center justify-center h-full">
-                  <img src={QR_SRC} alt="QR Code" className="max-h-100 object-contain" />
+                  {/* باركود أكبر */}
+                  <img src={QR_SRC} alt="QR Code" className="object-contain" style={{ maxHeight: 180 }} />
                 </div>
               </td>
               <td className="border border-black py-2 px-2 text-center" colSpan={2}>خصم<br/><small>Discount</small></td>
