@@ -122,7 +122,7 @@ export default function ThreeStepInvoiceWizard() {
         </div>
 
         {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1 shadow-sm">
           <div className="flex items-center gap-2">
             <label className="text-xs text-neutral-600">Invoice No</label>
             <input
