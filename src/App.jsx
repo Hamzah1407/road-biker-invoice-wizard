@@ -8,15 +8,22 @@ import { Plus, Trash2, Printer, FilePlus2, ArrowRight } from "lucide-react";
  * 3) المعاينة والطباعة
  */
 
+// أنواع المستند
 const DOC_TYPES = [
   { id: "quote", label: "عرض سعر" },
   { id: "order", label: "طلب عميل" },
   { id: "invoice", label: "فاتورة ضريبية مبسطة" },
 ];
 
+// ملفات ثابتة
 const LOGO_SRC = "logo.png";
 const QR_SRC = "qr.png";
 
+// أكواد الأصناف التي يشملها الضمان
+const WARRANTY_ITEM_CODES = ["500", "1005", "BOXER-150"];
+const WARRANTY_CODES_UPPER = WARRANTY_ITEM_CODES.map((x) => x.toUpperCase());
+
+// أدوات مساعدة
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function num(v) { const n = parseFloat(String(v)); return isNaN(n) ? 0 : n; }
 const toCents = (v) => Math.round(v * 100);
@@ -363,23 +370,61 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
 function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, printedBy, docType }) {
   const isInvoice = docType === "invoice";
 
+  // ======== منطق الضمان بناءً على رقم الصنف ========
+  const { showWarranty, arText, enText } = useMemo(() => {
+    const normalize = (v) => String(v || "").trim().toUpperCase();
+    const entered = rows
+      .map((r) => normalize(r.itemNo))
+      .filter((v) => v.length > 0);
+
+    const eligible = entered.filter((v) => WARRANTY_CODES_UPPER.includes(v));
+    const hasEligible = eligible.length > 0;
+    const hasOther = entered.some((v) => !WARRANTY_CODES_UPPER.includes(v));
+
+    if (!hasEligible) {
+      return { showWarranty: false, arText: "", enText: "" };
+    }
+
+    // إذا كلها مشمولة فقط → النص المعتاد بدون ذكر الأكواد
+    if (!hasOther) {
+      return {
+        showWarranty: true,
+        arText: "يغطي الضمان عيوب التصنيع على المكينة فقط ولمدة 6 اشهر من تاريخ الفاتورة",
+        enText: "Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.",
+      };
+    }
+
+    // إذا وُجدت أصناف أخرى غير مشمولة → نذكر فقط الأكواد المشمولة الموجودة فعليًا
+    const presentCodesOriginal = rows
+      .map((r) => r.itemNo)
+      .filter((x) => WARRANTY_CODES_UPPER.includes(normalize(x)));
+    const listAr = presentCodesOriginal.join("، ");
+    const listEn = presentCodesOriginal.join(", ");
+
+    const pluralAr = presentCodesOriginal.length > 1 ? "للأصناف رقم: " : "للصنف رقم: ";
+    const pluralEn = presentCodesOriginal.length > 1 ? "for item(s) #: " : "for item #: ";
+
+    return {
+      showWarranty: true,
+      arText: `يغطي الضمان عيوب التصنيع على المكينة فقط ${pluralAr}${listAr} ولمدة 6 اشهر من تاريخ الفاتورة`,
+      enText: `Warranty covers manufacturing defects of the engine only ${pluralEn}${listEn} for 6 months from the invoice date.`,
+    };
+  }, [rows]);
+
   return (
     <article className="invoice space-y-5">
-      {/* Header: نستخدم dir="ltr" على الحاوية لضمان ترتيب يسار>وسط>يمين */}
+      {/* Header */}
       <div className="border border-black p-3 bg-white">
         <div className="grid grid-cols-3 gap-2 items-start" dir="ltr">
-          {/* EN Left */}
           <div className="text-left" dir="ltr">
             <div className="text-rose-600 font-semibold">Road Biker Motorcycles</div>
             <div className="text-xs mt-1"><span className="font-semibold">Address:</span> Hail - Al-Naisiyah Road</div>
             <div className="text-xs"><span className="font-semibold">Tax Number:</span> 301294984200003</div>
             <div className="text-xs"><span className="font-semibold">Phone Number:</span> 0500123007</div>
           </div>
-          {/* Logo Center — أكبر */}
           <div className="text-center">
             <img src={LOGO_SRC} alt="Logo" className="inline-block max-h-20 object-contain" />
           </div>
-          {/* AR Right */}
           <div className="text-right" dir="rtl">
             <div className="text-rose-600 font-semibold">رود بايكر للدراجات النارية</div>
             <div className="text-xs mt-1"><span className="font-semibold">العنوان الرئيسي :</span> حائل - طريق النصيبية</div>
@@ -389,17 +434,15 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* Meta + Title — بدون إطار، مع ترتيب EN يسار / العنوان وسط / AR يمين */}
+      {/* Meta + Title */}
       <div className="p-3 bg-white">
         <div className="grid grid-cols-3 items-start" dir="ltr">
-          {/* EN Left */}
           <div className="text-sm text-left" dir="ltr">
             <div><span className="font-semibold">Invoice No:</span> {docNo}</div>
             <div><span className="font-semibold">Invoice Date:</span> {docDate}</div>
             <div><span className="font-semibold">Currency:</span> {currency}</div>
           </div>
           <div className="text-center text-rose-600 font-semibold">{title}</div>
-          {/* AR Right */}
           <div className="text-sm text-right" dir="rtl">
             <div><span className="font-semibold">رقم الفاتورة:</span> {docNo}</div>
             <div><span className="font-semibold">تاريخ الفاتورة:</span> {docDate}</div>
@@ -408,10 +451,9 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* تفاصيل العميل — بدون إطار */}
+      {/* تفاصيل العميل */}
       <div className="p-3 bg-white">
         <div className="grid grid-cols-2 gap-6" dir="ltr">
-          {/* EN Left */}
           <div className="text-sm space-y-1 text-left" dir="ltr">
             <div><span className="font-semibold">Name:</span> {en.name || "—"}</div>
             <div><span className="font-semibold">Phone:</span> {en.phone || "—"}</div>
@@ -423,7 +465,6 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
               </>
             )}
           </div>
-          {/* AR Right */}
           <div className="text-sm space-y-1 text-right" dir="rtl">
             <div><span className="font-semibold">الاسم:</span> {ar.name || "—"}</div>
             <div><span className="font-semibold">الهاتف:</span> {ar.phone || "—"}</div>
@@ -438,7 +479,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* الجدول + الإجماليات + QR — QR أكبر */}
+      {/* الجدول + الإجماليات + QR */}
       <div className="bg-white">
         <table className="w-full text-sm border border-black">
           <thead>
@@ -490,27 +531,25 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </table>
       </div>
 
-      {/* Footer — بدون إطار: EN يسار / AR يمين */}
-      <div className="p-3 bg-white">
-        <div className="grid grid-cols-2 gap-6 text-sm" dir="ltr">
-          <div className="text-left" dir="ltr">
-            <span className="font-semibold">Printed by:</span> {printedBy}<br/>
-            <span className="font-semibold">Invoice date:</span> {docDate}<br/>
-            <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
-            <div className="text-rose-600 mt-2">
-              Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.
+      {/* Footer — النص يتغيّر حسب شرط الضمان */}
+      {showWarranty && (
+        <div className="p-3 bg-white">
+          <div className="grid grid-cols-2 gap-6 text-sm" dir="ltr">
+            <div className="text-left" dir="ltr">
+              <span className="font-semibold">Printed by:</span> {printedBy}<br/>
+              <span className="font-semibold">Invoice date:</span> {docDate}<br/>
+              <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
+              <div className="text-rose-600 mt-2">{enText}</div>
             </div>
-          </div>
-          <div className="text-right" dir="rtl">
-            <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
-            <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
-            <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
-            <div className="text-rose-600 mt-2">
-              يغطي الضمان عيوب التصنيع على المكينة فقط ولمدة 6 اشهر من تاريخ الفاتورة
+            <div className="text-right" dir="rtl">
+              <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
+              <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
+              <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
+              <div className="text-rose-600 mt-2">{arText}</div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </article>
   );
 }
