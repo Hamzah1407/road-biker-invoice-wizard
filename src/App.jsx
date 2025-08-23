@@ -188,11 +188,11 @@ export default function ThreeStepInvoiceWizard() {
   );
 }
 
-/* =================== خطوة 1: بيانات العميل =================== */
+// ========= خطوة 1: بيانات العميل =========
 function Step1Customer({ docType, ar, setAr, en, setEn }) {
   const isInvoice = docType === "invoice";
 
-  // ربط ثنائي الاتجاه فوري (يُستخدم على الحقول الظاهرة فقط)
+  // ربط ثنائي الاتجاه فوري
   const linkFromAr = (keyAr, value) => {
     setAr((a) => ({ ...a, [keyAr]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", cr: "reg" };
@@ -209,99 +209,65 @@ function Step1Customer({ docType, ar, setAr, en, setEn }) {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
-        {/* عربي */}
-        <div className="rounded-xl border border-neutral-200 p-4">
-          <h3 className="text-sm font-semibold mb-3">بيانات العميل (عربي)</h3>
+        {/* عربي - يمين */}
+        <div className="rounded-xl border border-neutral-200 p-4" dir="rtl">
+          <h3 className="text-sm font-semibold mb-3 text-right">بيانات العميل (عربي)</h3>
 
-          <FormRow label="الاسم:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.name}
-              onChange={(e) => setAr({ ...ar, name: e.target.value })}
-            />
+          <FormRow label="الاسم:" labelAlign="right">
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                   value={ar.name} onChange={(e)=>setAr({...ar, name:e.target.value})}/>
           </FormRow>
 
-          <FormRow label="الهاتف:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.phone}
-              onChange={(e) => linkFromAr("phone", e.target.value)}
-            />
+          <FormRow label="الهاتف:" labelAlign="right">
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                   value={ar.phone} onChange={(e)=>linkFromAr("phone", e.target.value)}/>
           </FormRow>
 
           {isInvoice && (
             <>
-              <FormRow label="الرقم الضريبي:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={ar.tax}
-                  onChange={(e) => linkFromAr("tax", e.target.value)}
-                />
+              <FormRow label="الرقم الضريبي:" labelAlign="right">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={ar.tax} onChange={(e)=>linkFromAr("tax", e.target.value)}/>
               </FormRow>
-
-              <FormRow label="العنوان الوطني:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={ar.address}
-                  onChange={(e) => linkFromAr("address", e.target.value)}
-                />
+              <FormRow label="العنوان الوطني:" labelAlign="right">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={ar.address} onChange={(e)=>linkFromAr("address", e.target.value)}/>
               </FormRow>
-
-              <FormRow label="السجل التجاري:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={ar.cr}
-                  onChange={(e) => linkFromAr("cr", e.target.value)}
-                />
+              <FormRow label="السجل التجاري:" labelAlign="right">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={ar.cr} onChange={(e)=>linkFromAr("cr", e.target.value)}/>
               </FormRow>
             </>
           )}
         </div>
 
-        {/* English */}
-        <div className="rounded-xl border border-neutral-200 p-4">
-          <h3 className="text-sm font-semibold mb-3">Customer Details (English)</h3>
+        {/* English - يسار */}
+        <div className="rounded-xl border border-neutral-200 p-4" dir="ltr">
+          <h3 className="text-sm font-semibold mb-3 text-left">Customer Details (English)</h3>
 
-          <FormRow label="Name:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.name}
-              onChange={(e) => setEn({ ...en, name: e.target.value })}
-            />
+          <FormRow label="Name:" labelAlign="left">
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                   value={en.name} onChange={(e)=>setEn({...en, name:e.target.value})}/>
           </FormRow>
 
-          <FormRow label="Phone:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.phone}
-              onChange={(e) => linkFromEn("phone", e.target.value)}
-            />
+          <FormRow label="Phone:" labelAlign="left">
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                   value={en.phone} onChange={(e)=>linkFromEn("phone", e.target.value)}/>
           </FormRow>
 
           {isInvoice && (
             <>
-              <FormRow label="Tax No:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={en.tax}
-                  onChange={(e) => linkFromEn("tax", e.target.value)}
-                />
+              <FormRow label="Tax No:" labelAlign="left">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={en.tax} onChange={(e)=>linkFromEn("tax", e.target.value)}/>
               </FormRow>
-
-              <FormRow label="Address:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={en.address}
-                  onChange={(e) => linkFromEn("address", e.target.value)}
-                />
+              <FormRow label="Address:" labelAlign="left">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={en.address} onChange={(e)=>linkFromEn("address", e.target.value)}/>
               </FormRow>
-
-              <FormRow label="Reg. No:">
-                <input
-                  className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-                  value={en.reg}
-                  onChange={(e) => linkFromEn("reg", e.target.value)}
-                />
+              <FormRow label="Reg. No:" labelAlign="left">
+                <input className="h-10 w-full rounded-lg border border-neutral-300 px-3"
+                       value={en.reg} onChange={(e)=>linkFromEn("reg", e.target.value)}/>
               </FormRow>
             </>
           )}
@@ -311,14 +277,18 @@ function Step1Customer({ docType, ar, setAr, en, setEn }) {
   );
 }
 
-function FormRow({ label, children }) {
+
+function FormRow({ label, children, labelAlign = "right" }) {
   return (
     <div className="grid grid-cols-3 items-center gap-3 py-1.5">
-      <div className="text-sm text-neutral-700 col-span-1">{label}</div>
+      <div className={`text-sm text-neutral-700 col-span-1 ${labelAlign === "left" ? "text-left" : "text-right"}`}>
+        {label}
+      </div>
       <div className="col-span-2">{children}</div>
     </div>
   );
 }
+
 
 /* =================== خطوة 2: البنود =================== */
 function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount }) {
