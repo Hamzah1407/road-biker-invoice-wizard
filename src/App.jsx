@@ -2,29 +2,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Printer, FilePlus2, ArrowLeft, ArrowRight } from "lucide-react";
 
 /**
- * معالج من ثلاث خطوات (Wizard):
- * 1) بيانات العميل (حقول فقط — بدون هيدر)
- * 2) البنود (جداول الإدخال)
- * 3) إنشاء المستند (معاينة وطباعة)
- *
- * آخر تعديلات:
- * - الهيدر داخل كارد بنفس عرض الجدول.
- * - ربط ثنائي الاتجاه للحقول (الهاتف/الرقم الضريبي/العنوان الوطني/السجل التجاري) بين العربي والإنجليزي لحظيًا عبر onChange.
- * - نص الضمان بالعربي والإنجليزي في التذييل.
+ * Wizard:
+ * 1) بيانات العميل
+ * 2) البنود
+ * 3) المعاينة والطباعة
  */
 
-// أنواع المستند
 const DOC_TYPES = [
   { id: "quote", label: "عرض سعر" },
   { id: "order", label: "طلب عميل" },
   { id: "invoice", label: "فاتورة ضريبية مبسطة" },
 ];
 
-// ملفات ثابتة
 const LOGO_SRC = "logo.png";
 const QR_SRC = "qr.png";
 
-// أدوات مساعدة
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function num(v) { const n = parseFloat(String(v)); return isNaN(n) ? 0 : n; }
 const toCents = (v) => Math.round(v * 100);
@@ -43,15 +35,18 @@ export default function ThreeStepInvoiceWizard() {
   const [step, setStep] = useState(1);
   const [docType, setDocType] = useState("invoice");
 
-  // ميتا الفاتورة — أعلى الواجهة
+  // ميتا
   const [docNo, setDocNo] = useState("");
-  const [docDate, setDocDate] = useState(todayISO()); // الآن نص حر
+  const [docDate, setDocDate] = useState(todayISO());
   const [currency, setCurrency] = useState("SAR");
   const [printedBy] = useState("Abu Kadi");
 
-  // بيانات العميل
+  // العميل
   const [ar, setAr] = useState({ name: "", phone: "", tax: "", address: "", cr: "" });
   const [en, setEn] = useState({ name: "", phone: "", tax: "", address: "", reg: "" });
+
+  // الربط الفوري بين الحقول النظيرة
+  // (نستخدمه داخل Step1Customer من خلال onChange)
 
   // البنود
   const [rows, setRows] = useState([{ id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]);
@@ -59,23 +54,20 @@ export default function ThreeStepInvoiceWizard() {
   function removeRow(id) { setRows((r) => (r.length > 1 ? r.filter((x) => x.id !== id) : r)); }
   function updateRow(id, patch) { setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x))); }
 
-  // خصم
   const [discount, setDiscount] = useState("0");
 
-  // توليد رقم المستند أول مرة حسب النوع
   useEffect(() => {
     if (!docNo) {
       const prefix = docType === "quote" ? "Q" : docType === "order" ? "SO" : "INV";
       setDocNo(nextDocNo(prefix));
     }
-  }, [docType]); // عند تغيّر النوع مع بقاء docNo فارغ
+  }, [docType]); // eslint-disable-line
 
-  // الحساب (منطق الهللات)
   const totals = useMemo(() => {
     let totalSubCents = 0; let totalVatCents = 0; let totalGrandCents = 0;
     rows.forEach((row) => {
       const price = num(row.unitPrice); const qty = num(row.qty);
-      const unitVat = Math.round(price * 0.15 * 100) / 100; // 15%
+      const unitVat = Math.round(price * 0.15 * 100) / 100;
       const priceCents = Math.round(price * 100); const vatUnitCents = Math.round(unitVat * 100);
       const rowSubCents = priceCents * qty; const rowVatCents = vatUnitCents * qty; const rowGrandCents = rowSubCents + rowVatCents;
       totalSubCents += rowSubCents; totalVatCents += rowVatCents; totalGrandCents += rowGrandCents;
@@ -92,7 +84,7 @@ export default function ThreeStepInvoiceWizard() {
       <style>{`@media print{.no-print{display:none!important} th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} .page{box-shadow:none!important}}`}</style>
 
       <div className="max-w-6xl mx-auto px-4 space-y-4">
-        {/* الشريط العلوي: نوع المستند + ميتا الفاتورة (بنفس عرض الكارد) */}
+        {/* الهيدر */}
         <div className="no-print page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
           <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
@@ -100,43 +92,22 @@ export default function ThreeStepInvoiceWizard() {
                 <button
                   key={d.id}
                   onClick={() => setDocType(d.id)}
-                  className={`px-4 h-10 rounded-xl text-sm transition ${
-                    docType === d.id
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-700 hover:bg-neutral-100"
-                  }`}
+                  className={`px-4 h-10 rounded-xl text-sm transition ${docType === d.id ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"}`}
                 >
                   {d.label}
                 </button>
               ))}
             </div>
 
-            {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
             <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-neutral-600"></label>
-                <input
-                  value={docNo}
-                  onChange={(e) => setDocNo(e.target.value)}
-                  className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center"
-                />
+                <input value={docNo} onChange={(e) => setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center" />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-neutral-600"></label>
-                <input
-                  value={docDate}
-                  onChange={(e) => setDocDate(e.target.value)}
-                  placeholder="yyyy / m / d"
-                  className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center"
-                />
+                <input value={docDate} onChange={(e) => setDocDate(e.target.value)} placeholder="yyyy / m / d" className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center" />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-neutral-600"></label>
-                <input
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center"
-                />
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center" />
               </div>
             </div>
           </div>
@@ -173,6 +144,7 @@ export default function ThreeStepInvoiceWizard() {
               rows={rows}
               totals={totals}
               printedBy={printedBy}
+              docType={docType}   // ⬅️ نمرّر نوع المستند
             />
           )}
         </div>
@@ -182,32 +154,21 @@ export default function ThreeStepInvoiceWizard() {
           <button
             disabled={step === 1}
             onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-            className={`h-10 px-4 rounded-xl border bg-white border-neutral-300 ${
-              step === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"
-            }`}
+            className={`h-10 px-4 rounded-xl border bg-white border-neutral-300 ${step === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"}`}
           >
             <ArrowRight className="inline me-2" size={16} />
             السابق
           </button>
           {step < 3 ? (
-            <button
-              onClick={() => setStep((s) => s + 1)}
-              className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2"
-            >
+            <button onClick={() => setStep((s) => s + 1)} className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2">
               <FilePlus2 size={18} /> التالي
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => window.print()}
-                className="h-10 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center gap-2"
-              >
+              <button onClick={() => window.print()} className="h-10 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center gap-2">
                 <Printer size={18} /> طباعة
               </button>
-              <button
-                onClick={() => setStep(1)}
-                className="h-10 px-4 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"
-              >
+              <button onClick={() => setStep(1)} className="h-10 px-4 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
                 <ArrowLeft className="inline me-2" size={16} /> تعديل
               </button>
             </div>
@@ -218,16 +179,15 @@ export default function ThreeStepInvoiceWizard() {
   );
 }
 
-// ========== خطوة 1: بيانات العميل فقط ==========
+// ========== خطوة 1: بيانات العميل ==========
 function Step1Customer({ ar, setAr, en, setEn }) {
-  // ربط ثنائي الاتجاه فوري عبر onChange
+  // ربط ثنائي الاتجاه فوري
   const linkFromAr = (keyAr, value) => {
     setAr((a) => ({ ...a, [keyAr]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", cr: "reg" };
     const keyEn = map[keyAr];
     setEn((e) => ({ ...e, [keyEn]: value }));
   };
-
   const linkFromEn = (keyEn, value) => {
     setEn((e) => ({ ...e, [keyEn]: value }));
     const map = { phone: "phone", tax: "tax", address: "address", reg: "cr" };
@@ -241,78 +201,38 @@ function Step1Customer({ ar, setAr, en, setEn }) {
         <div className="rounded-xl border border-neutral-200 p-4">
           <h3 className="text-sm font-semibold mb-3">بيانات العميل (عربي)</h3>
           <FormRow label="الاسم:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.name}
-              onChange={(e) => setAr({ ...ar, name: e.target.value })}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.name} onChange={(e)=>setAr({...ar, name:e.target.value})}/>
           </FormRow>
           <FormRow label="الهاتف:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.phone}
-              onChange={(e) => linkFromAr("phone", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.phone} onChange={(e)=>linkFromAr("phone", e.target.value)}/>
           </FormRow>
           <FormRow label="الرقم الضريبي:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.tax}
-              onChange={(e) => linkFromAr("tax", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.tax} onChange={(e)=>linkFromAr("tax", e.target.value)}/>
           </FormRow>
           <FormRow label="العنوان الوطني:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.address}
-              onChange={(e) => linkFromAr("address", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.address} onChange={(e)=>linkFromAr("address", e.target.value)}/>
           </FormRow>
           <FormRow label="السجل التجاري:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={ar.cr}
-              onChange={(e) => linkFromAr("cr", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={ar.cr} onChange={(e)=>linkFromAr("cr", e.target.value)}/>
           </FormRow>
         </div>
 
         <div className="rounded-xl border border-neutral-200 p-4">
           <h3 className="text-sm font-semibold mb-3">Customer Details (English)</h3>
           <FormRow label="Name:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.name}
-              onChange={(e) => setEn({ ...en, name: e.target.value })}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.name} onChange={(e)=>setEn({...en, name:e.target.value})}/>
           </FormRow>
           <FormRow label="Phone:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.phone}
-              onChange={(e) => linkFromEn("phone", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.phone} onChange={(e)=>linkFromEn("phone", e.target.value)}/>
           </FormRow>
           <FormRow label="Tax No:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.tax}
-              onChange={(e) => linkFromEn("tax", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.tax} onChange={(e)=>linkFromEn("tax", e.target.value)}/>
           </FormRow>
           <FormRow label="Address:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.address}
-              onChange={(e) => linkFromEn("address", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.address} onChange={(e)=>linkFromEn("address", e.target.value)}/>
           </FormRow>
           <FormRow label="Reg. No:">
-            <input
-              className="h-10 w-full rounded-lg border border-neutral-300 px-3"
-              value={en.reg}
-              onChange={(e) => linkFromEn("reg", e.target.value)}
-            />
+            <input className="h-10 w-full rounded-lg border border-neutral-300 px-3" value={en.reg} onChange={(e)=>linkFromEn("reg", e.target.value)}/>
           </FormRow>
         </div>
       </div>
@@ -338,24 +258,12 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
           <thead>
             <tr className="bg-neutral-50 text-neutral-700">
               <th className="print-bg text-right py-2 px-3 w-10">#</th>
-              <th className="print-bg text-right py-2 px-3 w-40">
-                رقم الصنف<br /><small className="text-xs text-neutral-500">Item No</small>
-              </th>
-              <th className="print-bg text-right py-2 px-3">
-                اسم الصنف<br /><small className="text-xs text-neutral-500">Item Name</small>
-              </th>
-              <th className="print-bg text-right py-2 px-3 w-32">
-                الوحدة<br /><small className="text-xs text-neutral-500">Unit</small>
-              </th>
-              <th className="print-bg text-right py-2 px-3 w-28">
-                الكمية<br /><small className="text-xs text-neutral-500">Quantity</small>
-              </th>
-              <th className="print-bg text-right py-2 px-3 w-36">
-                سعر الوحدة<br /><small className="text-xs text-neutral-500">Unit Price</small>
-              </th>
-              <th className="print-bg text-right py-2 px-3 w-36">
-                الإجمالي<br /><small className="text-xs text-neutral-500">Total</small>
-              </th>
+              <th className="print-bg text-right py-2 px-3 w-40">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
+              <th className="print-bg text-right py-2 px-3">اسم الصنف<br/><small className="text-xs text-neutral-500">Item Name</small></th>
+              <th className="print-bg text-right py-2 px-3 w-32">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small></th>
+              <th className="print-bg text-right py-2 px-3 w-28">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
+              <th className="print-bg text-right py-2 px-3 w-36">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
+              <th className="print-bg text-right py-2 px-3 w-36">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
               <th className="print-bg text-right py-2 px-3 w-12">—</th>
             </tr>
           </thead>
@@ -363,27 +271,13 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
             {rows.map((r, idx) => (
               <tr key={r.id} className="border-t border-neutral-200">
                 <td className="py-2 px-3">{idx + 1}</td>
-                <td className="py-2 px-3">
-                  <input value={r.itemNo} onChange={(e) => updateRow(r.id, { itemNo: e.target.value })} className="h-10 w-full rounded border border-neutral-300 px-3" />
-                </td>
-                <td className="py-2 px-3">
-                  <input value={r.itemName} onChange={(e) => updateRow(r.id, { itemName: e.target.value })} className="h-10 w-full rounded border border-neutral-300 px-3" />
-                </td>
-                <td className="py-2 px-3 w-32">
-                  <input value={r.unit} onChange={(e) => updateRow(r.id, { unit: e.target.value })} className="h-10 w-full rounded border border-neutral-300 px-3" />
-                </td>
-                <td className="py-2 px-3 w-28">
-                  <input type="number" min={0} value={r.qty} onChange={(e) => updateRow(r.id, { qty: e.target.value })} className="h-10 w-full rounded border border-neutral-300 px-3" />
-                </td>
-                <td className="py-2 px-3 w-36">
-                  <input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e) => updateRow(r.id, { unitPrice: e.target.value })} className="h-10 w-full rounded border border-neutral-300 px-3" />
-                </td>
-                <td className="py-2 px-3 w-36">{fromCents(Math.round(num(r.unitPrice) * 100) * num(r.qty))}</td>
-                <td className="py-2 px-3 w-12">
-                  <button onClick={() => removeRow(r.id)} className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
+                <td className="py-2 px-3"><input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
+                <td className="py-2 px-3"><input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
+                <td className="py-2 px-3 w-32"><input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
+                <td className="py-2 px-3 w-28"><input type="number" min={0} value={r.qty} onChange={(e)=>updateRow(r.id,{qty:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
+                <td className="py-2 px-3 w-36"><input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/></td>
+                <td className="py-2 px-3 w-36">{fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}</td>
+                <td className="py-2 px-3 w-12"><button onClick={()=>removeRow(r.id)} className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50"><Trash2 size={16}/></button></td>
               </tr>
             ))}
           </tbody>
@@ -391,16 +285,14 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
-          <Plus size={16} className="inline ms-1" /> إضافة صف
-        </button>
+        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"><Plus size={16} className="inline ms-1"/> إضافة صف</button>
       </div>
 
       <div className="rounded-xl border border-neutral-200 p-4 text-sm max-w-md ms-auto">
         <div className="flex items-center justify-between">
           <div className="text-neutral-700">خصم <span className="text-xs text-neutral-500">Discount</span></div>
           <div className="flex items-center gap-2">
-            <input type="number" min={0} step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-10 w-32 rounded border border-neutral-300 px-3" />
+            <input type="number" min={0} step="0.01" value={discount} onChange={(e)=>setDiscount(e.target.value)} className="h-10 w-32 rounded border border-neutral-300 px-3"/>
             <span className="text-neutral-500">SAR</span>
           </div>
         </div>
@@ -410,10 +302,12 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
 }
 
 // ========== خطوة 3: المعاينة/الطباعة ==========
-function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, printedBy }) {
+function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, printedBy, docType }) {
+  const isInvoice = docType === "invoice";
+
   return (
     <article className="invoice space-y-5">
-      {/* Header: EN يسار / Logo وسط / AR يمين */}
+      {/* Header */}
       <div className="border border-black p-3 bg-white">
         <div className="flex items-start justify-between">
           <div className="w-1/3 text-left" dir="ltr">
@@ -434,17 +328,15 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* Meta + Title أعلى */}
+      {/* Meta + Title */}
       <div className="border border-black p-3 bg-white">
         <div className="grid grid-cols-3 items-start">
-          {/* AR Right */}
           <div className="text-sm text-right">
             <div><span className="font-semibold">رقم الفاتورة:</span> {docNo}</div>
             <div><span className="font-semibold">تاريخ الفاتورة:</span> {docDate}</div>
             <div><span className="font-semibold">العملة:</span> {currency}</div>
           </div>
           <div className="text-center text-rose-600 font-semibold">{title}</div>
-          {/* EN Left */}
           <div className="text-sm" dir="ltr">
             <div><span className="font-semibold">Invoice No:</span> {docNo}</div>
             <div><span className="font-semibold">Invoice Date:</span> {docDate}</div>
@@ -459,16 +351,24 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
           <div className="text-sm space-y-1 text-right">
             <div><span className="font-semibold">الاسم:</span> {ar.name || "—"}</div>
             <div><span className="font-semibold">الهاتف:</span> {ar.phone || "—"}</div>
-            <div><span className="font-semibold">الرقم الضريبي:</span> {ar.tax || "—"}</div>
-            <div><span className="font-semibold">العنوان الوطني:</span> {ar.address || "—"}</div>
-            <div><span className="font-semibold">السجل التجاري:</span> {ar.cr || "—"}</div>
+            {isInvoice && (
+              <>
+                <div><span className="font-semibold">الرقم الضريبي:</span> {ar.tax || "—"}</div>
+                <div><span className="font-semibold">العنوان الوطني:</span> {ar.address || "—"}</div>
+                <div><span className="font-semibold">السجل التجاري:</span> {ar.cr || "—"}</div>
+              </>
+            )}
           </div>
           <div className="text-sm space-y-1" dir="ltr">
             <div><span className="font-semibold">Name:</span> {en.name || "—"}</div>
             <div><span className="font-semibold">Phone:</span> {en.phone || "—"}</div>
-            <div><span className="font-semibold">Tax No:</span> {en.tax || "—"}</div>
-            <div><span className="font-semibold">Address:</span> {en.address || "—"}</div>
-            <div><span className="font-semibold">Reg. No:</span> {en.reg || "—"}</div>
+            {isInvoice && (
+              <>
+                <div><span className="font-semibold">Tax No:</span> {en.tax || "—"}</div>
+                <div><span className="font-semibold">Address:</span> {en.address || "—"}</div>
+                <div><span className="font-semibold">Reg. No:</span> {en.reg || "—"}</div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -479,24 +379,24 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
           <thead>
             <tr>
               <th className="print-bg border border-black py-2 px-2 w-10">#</th>
-              <th className="print-bg border border-black py-2 px-2 w-40">رقم الصنف<br /><small>Item No</small></th>
-              <th className="print-bg border border-black py-2 px-2">اسم الصنف<br /><small>Item Name</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-28">الوحدة<br /><small>Unit</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-28">الكمية<br /><small>Quantity</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-36">سعر الوحدة<br /><small>Unit Price</small></th>
-              <th className="print-bg border border-black py-2 px-2 w-36">الإجمالي<br /><small>Total</small></th>
+              <th className="print-bg border border-black py-2 px-2 w-40">رقم الصنف<br/><small>Item No</small></th>
+              <th className="print-bg border border-black py-2 px-2">اسم الصنف<br/><small>Item Name</small></th>
+              <th className="print-bg border border-black py-2 px-2 w-28">الوحدة<br/><small>Unit</small></th>
+              <th className="print-bg border border-black py-2 px-2 w-28">الكمية<br/><small>Quantity</small></th>
+              <th className="print-bg border border-black py-2 px-2 w-36">سعر الوحدة<br/><small>Unit Price</small></th>
+              <th className="print-bg border border-black py-2 px-2 w-36">الإجمالي<br/><small>Total</small></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, idx) => (
               <tr key={r.id}>
-                <td className="border border-black py-2 px-2 text-center">{idx + 1}</td>
+                <td className="border border-black py-2 px-2 text-center">{idx+1}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.itemNo || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.itemName || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.unit || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.qty || "0"}</td>
-                <td className="border border-black py-2 px-2 text-center">{(num(r.unitPrice) || 0).toFixed(2)}</td>
-                <td className="border border-black py-2 px-2 text-center">{fromCents(Math.round(num(r.unitPrice) * 100) * num(r.qty))}</td>
+                <td className="border border-black py-2 px-2 text-center">{(num(r.unitPrice)||0).toFixed(2)}</td>
+                <td className="border border-black py-2 px-2 text-center">{fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}</td>
               </tr>
             ))}
 
@@ -506,37 +406,37 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
                   <img src={QR_SRC} alt="QR Code" className="max-h-40 object-contain" />
                 </div>
               </td>
-              <td className="border border-black py-2 px-2 text-center" colSpan={2}>خصم<br /><small>Discount</small></td>
+              <td className="border border-black py-2 px-2 text-center" colSpan={2}>خصم<br/><small>Discount</small></td>
               <td className="border border-black py-2 px-2 text-center">{fromCents(totals.discountCents)}</td>
             </tr>
             <tr>
-              <td className="border border-black py-2 px-2 text-center" colSpan={2}>الإجمالي قبل الضريبة<br /><small>Subtotal (before VAT)</small></td>
+              <td className="border border-black py-2 px-2 text-center" colSpan={2}>الإجمالي قبل الضريبة<br/><small>Subtotal (before VAT)</small></td>
               <td className="border border-black py-2 px-2 text-center">{fromCents(totals.totalSubCents)}</td>
             </tr>
             <tr>
-              <td className="border border-black py-2 px-2 text-center" colSpan={2}>ضريبة القيمة المضافة 15%<br /><small>VAT 15%</small></td>
+              <td className="border border-black py-2 px-2 text-center" colSpan={2}>ضريبة القيمة المضافة 15%<br/><small>VAT 15%</small></td>
               <td className="border border-black py-2 px-2 text-center">{fromCents(totals.totalVatCents)}</td>
             </tr>
             <tr>
-              <td className="border border-black py-2 px-2 text-center font-semibold" colSpan={2}>الإجمالي النهائي<br /><small>Total (incl. VAT)</small></td>
+              <td className="border border-black py-2 px-2 text-center font-semibold" colSpan={2}>الإجمالي النهائي<br/><small>Total (incl. VAT)</small></td>
               <td className="border border-black py-2 px-2 text-center font-semibold">{fromCents(totals.finalCents)}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Footer مع نص الضمان عربي + English */}
+      {/* Footer */}
       <div className="border border-black p-3 bg-white">
         <div className="grid grid-cols-2 gap-6 text-sm">
           <div dir="ltr">
-            <span className="font-semibold">Printed by:</span> {printedBy}<br />
-            <span className="font-semibold">Invoice date:</span> {docDate}<br />
+            <span className="font-semibold">Printed by:</span> {printedBy}<br/>
+            <span className="font-semibold">Invoice date:</span> {docDate}<br/>
             <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
             <div className="text-rose-600 mt-2">Warranty covers manufacturing defects of the engine only for 6 months from the invoice date.</div>
           </div>
           <div className="text-right">
-            <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br />
-            <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br />
+            <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
+            <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
             <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
             <div className="text-rose-600 mt-2">يغطي الضمان عيوب التصنيع على المكينة فقط ولمدة 6 اشهر من تاريخ الفاتورة</div>
           </div>
