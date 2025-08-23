@@ -53,15 +53,30 @@ export default function ThreeStepInvoiceWizard() {
   const [ar, setAr] = useState({ name: "", phone: "", tax: "", address: "", cr: "" });
   const [en, setEn] = useState({ name: "", phone: "", tax: "", address: "", reg: "" });
 
-  // مزامنة بسيطة من العربي للإنجليزي عندما تكون فارغة
+  // ⬇️ مزامنة ثنائية الاتجاه مع حراسة لمنع اللوب
   useEffect(() => {
-    setEn((e) => ({
-      ...e,
-      phone: ar.phone && !e.phone ? ar.phone : e.phone,
-      tax: ar.tax && !e.tax ? ar.tax : e.tax,
-      reg: ar.cr && !e.reg ? ar.cr : e.reg,
-    }));
-  }, [ar.phone, ar.tax, ar.cr]);
+    setEn((e) => {
+      let changed = false;
+      const next = { ...e };
+      if (!e.phone && ar.phone) { next.phone = ar.phone; changed = true; }
+      if (!e.tax && ar.tax) { next.tax = ar.tax; changed = true; }
+      if (!e.address && ar.address) { next.address = ar.address; changed = true; }
+      if (!e.reg && ar.cr) { next.reg = ar.cr; changed = true; }
+      return changed ? next : e;
+    });
+  }, [ar.phone, ar.tax, ar.address, ar.cr]);
+
+  useEffect(() => {
+    setAr((a) => {
+      let changed = false;
+      const next = { ...a };
+      if (!a.phone && en.phone) { next.phone = en.phone; changed = true; }
+      if (!a.tax && en.tax) { next.tax = en.tax; changed = true; }
+      if (!a.address && en.address) { next.address = en.address; changed = true; }
+      if (!a.cr && en.reg) { next.cr = en.reg; changed = true; }
+      return changed ? next : a;
+    });
+  }, [en.phone, en.tax, en.address, en.reg]);
 
   // البنود
   const [rows, setRows] = useState([{ id: uid(), itemNo: "", itemName: "", unit: "", qty: "1", unitPrice: "0" }]);
@@ -78,7 +93,7 @@ export default function ThreeStepInvoiceWizard() {
       const prefix = docType === "quote" ? "Q" : docType === "order" ? "SO" : "INV";
       setDocNo(nextDocNo(prefix));
     }
-  }, [docType]);
+  }, [docType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // الحساب (منطق الهللات)
   const totals = useMemo(() => {
