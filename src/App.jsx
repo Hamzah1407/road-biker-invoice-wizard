@@ -112,7 +112,7 @@ export default function ThreeStepInvoiceWizard() {
             </div>
 
             {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
-            <div className="ms-auto grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
               <div className="flex items-center gap-2">
                 <label className="text-xs text-neutral-600">Invoice No</label>
                 <input value={docNo} onChange={(e)=>setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3" />
