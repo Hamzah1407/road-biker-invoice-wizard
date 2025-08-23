@@ -373,9 +373,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
   // ======== منطق الضمان بناءً على رقم الصنف ========
   const { showWarranty, arText, enText } = useMemo(() => {
     const normalize = (v) => String(v || "").trim().toUpperCase();
-    const entered = rows
-      .map((r) => normalize(r.itemNo))
-      .filter((v) => v.length > 0);
+    const entered = rows.map((r) => normalize(r.itemNo)).filter((v) => v.length > 0);
 
     const eligible = entered.filter((v) => WARRANTY_CODES_UPPER.includes(v));
     const hasEligible = eligible.length > 0;
@@ -385,7 +383,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
       return { showWarranty: false, arText: "", enText: "" };
     }
 
-    // إذا كلها مشمولة فقط → النص المعتاد بدون ذكر الأكواد
+    // إذا كلها مشمولة فقط → النص المعتاد
     if (!hasOther) {
       return {
         showWarranty: true,
@@ -531,25 +529,27 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </table>
       </div>
 
-      {/* Footer — النص يتغيّر حسب شرط الضمان */}
-      {showWarranty && (
-        <div className="p-3 bg-white">
-          <div className="grid grid-cols-2 gap-6 text-sm" dir="ltr">
-            <div className="text-left" dir="ltr">
-              <span className="font-semibold">Printed by:</span> {printedBy}<br/>
-              <span className="font-semibold">Invoice date:</span> {docDate}<br/>
-              <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
+      {/* Footer — دائمًا ظاهر، نص الضمان فقط مشروط */}
+      <div className="p-3 bg-white">
+        <div className="grid grid-cols-2 gap-6 text-sm" dir="ltr">
+          <div className="text-left" dir="ltr">
+            <span className="font-semibold">Printed by:</span> {printedBy}<br/>
+            <span className="font-semibold">Invoice date:</span> {docDate}<br/>
+            <span className="font-semibold">Invoice time:</span> {new Date().toTimeString().split(" ")[0]}
+            {showWarranty ? (
               <div className="text-rose-600 mt-2">{enText}</div>
-            </div>
-            <div className="text-right" dir="rtl">
-              <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
-              <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
-              <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
+            ) : null}
+          </div>
+          <div className="text-right" dir="rtl">
+            <span className="font-semibold">طبع بواسطة المستخدم :</span> أبو كادي<br/>
+            <span className="font-semibold">تاريخ الفاتورة :</span> {docDate}<br/>
+            <span className="font-semibold">وقت الفاتورة :</span> {new Date().toTimeString().split(" ")[0]}
+            {showWarranty ? (
               <div className="text-rose-600 mt-2">{arText}</div>
-            </div>
+            ) : null}
           </div>
         </div>
-      )}
+      </div>
     </article>
   );
 }
