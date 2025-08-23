@@ -113,137 +113,134 @@ export default function ThreeStepInvoiceWizard() {
   const title = useMemo(() => (DOC_TYPES.find((d) => d.id === docType)?.label || "—"), [docType]);
 
   return (
-<div dir="rtl" className="min-h-screen bg-neutral-100 text-neutral-900 py-6">
-  <style>{`@media print{.no-print{display:none!important} th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} .page{box-shadow:none!important}}`}</style>
+    <div dir="rtl" className="min-h-screen bg-neutral-100 text-neutral-900 py-6">
+      <style>{`@media print{.no-print{display:none!important} th.print-bg{background-color:#c5d6e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} .page{box-shadow:none!important}}`}</style>
 
-  <div className="max-w-6xl mx-auto px-4 space-y-4">
-    {/* الشريط العلوي: نوع المستند + ميتا الفاتورة (بنفس عرض الكارد) */}
-    <div className="no-print page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-      <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
-          {DOC_TYPES.map((d) => (
+      <div className="max-w-6xl mx-auto px-4 space-y-4">
+        {/* الشريط العلوي: نوع المستند + ميتا الفاتورة (بنفس عرض الكارد) */}
+        <div className="no-print page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+          <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
+              {DOC_TYPES.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => setDocType(d.id)}
+                  className={`px-4 h-10 rounded-xl text-sm transition ${
+                    docType === d.id ? "bg-neutral-900 text-white" : "text-neutral-700 hover:bg-neutral-100"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+
+            {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-neutral-600">Invoice No</label>
+                <input
+                  value={docNo}
+                  onChange={(e) => setDocNo(e.target.value)}
+                  className="h-10 w-40 rounded-xl border border-neutral-300 px-3"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-neutral-600">Invoice Date</label>
+                <input
+                  value={docDate}
+                  onChange={(e) => setDocDate(e.target.value)}
+                  placeholder="yyyy / m / d"
+                  className="h-10 w-44 rounded-xl border border-neutral-300 px-3"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-neutral-600">Currency</label>
+                <input
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="h-10 w-28 rounded-xl border border-neutral-300 px-3"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center">
+            <div className="ms-auto text-sm text-neutral-500">Step {step} / 3</div>
+          </div>
+        </div>
+
+        <div className="page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+          {step === 1 && (
+            <Step1Customer ar={ar} setAr={setAr} en={en} setEn={setEn} />
+          )}
+
+          {step === 2 && (
+            <Step2Items
+              rows={rows}
+              addRow={addRow}
+              removeRow={removeRow}
+              updateRow={updateRow}
+              discount={discount}
+              setDiscount={setDiscount}
+            />
+          )}
+
+          {step === 3 && (
+            <Step3Preview
+              title={title}
+              docNo={docNo}
+              docDate={docDate}
+              currency={currency}
+              ar={ar}
+              en={en}
+              rows={rows}
+              totals={totals}
+              printedBy={printedBy}
+            />
+          )}
+        </div>
+
+        {/* أزرار التحكم */}
+        <div className="no-print flex items-center justify-between gap-2">
+          <button
+            disabled={step === 1}
+            onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+            className={`h-10 px-4 rounded-xl border bg-white border-neutral-300 ${
+              step === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"
+            }`}
+          >
+            <ArrowRight className="inline me-2" size={16} />
+            السابق
+          </button>
+          {step < 3 ? (
             <button
-              key={d.id}
-              onClick={() => setDocType(d.id)}
-              className={`px-4 h-10 rounded-xl text-sm transition ${
-                docType === d.id
-                  ? "bg-neutral-900 text-white"
-                  : "text-neutral-700 hover:bg-neutral-100"
-              }`}
+              onClick={() => setStep((s) => s + 1)}
+              className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2"
             >
-              {d.label}
+              <FilePlus2 size={18} /> التالي
             </button>
-          ))}
-        </div>
-
-        {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-white rounded-2xl p-1">
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
-            <input
-              value={docNo}
-              onChange={(e) => setDocNo(e.target.value)}
-              className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
-            {/* مدخل نصّي بدل date */}
-            <input
-              value={docDate}
-              onChange={(e) => setDocDate(e.target.value)}
-              placeholder="yyyy / m / d"
-              className="h-10 w-44 rounded-xl border border-neutral-300 px-3 text-center"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-600"></label>
-            <input
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="h-10 w-28 rounded-xl border border-neutral-300 px-3 text-center"
-            />
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.print()}
+                className="h-10 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center gap-2"
+              >
+                <Printer size={18} /> طباعة
+              </button>
+              <button
+                onClick={() => setStep(1)}
+                className="h-10 px-4 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"
+              >
+                <ArrowLeft className="inline me-2" size={16} /> تعديل
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="mt-2 flex items-center">
-        <div className="ms-auto text-sm text-neutral-500">Step {step} / 3</div>
-      </div>
     </div>
-
-    <div className="page bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-      {step === 1 && (
-        <Step1Customer ar={ar} setAr={setAr} en={en} setEn={setEn} />
-      )}
-
-      {step === 2 && (
-        <Step2Items
-          rows={rows}
-          addRow={addRow}
-          removeRow={removeRow}
-          updateRow={updateRow}
-          discount={discount}
-          setDiscount={setDiscount}
-        />
-      )}
-
-      {step === 3 && (
-        <Step3Preview
-          title={title}
-          docNo={docNo}
-          docDate={docDate}
-          currency={currency}
-          ar={ar}
-          en={en}
-          rows={rows}
-          totals={totals}
-          printedBy={printedBy}
-        />
-      )}
-    </div>
-
-    {/* أزرار التحكم */}
-    <div className="no-print flex items-center justify-between gap-2">
-      <button
-        disabled={step === 1}
-        onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-        className={`h-10 px-4 rounded-xl border bg-white border-neutral-300 ${
-          step === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"
-        }`}
-      >
-        <ArrowRight className="inline me-2" size={16} />
-        السابق
-      </button>
-      {step < 3 ? (
-        <button
-          onClick={() => setStep((s) => s + 1)}
-          className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2"
-        >
-          <FilePlus2 size={18} /> التالي
-        </button>
-      ) : (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => window.print()}
-            className="h-10 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center gap-2"
-          >
-            <Printer size={18} /> طباعة
-          </button>
-          <button
-            onClick={() => setStep(1)}
-            className="h-10 px-4 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"
-          >
-            <ArrowLeft className="inline me-2" size={16} /> تعديل
-          </button>
-        </div>
-      )}
-    </div>
-  </div>
-</div>
-
   );
 }
+
 
 // ========== خطوة 1: بيانات العميل فقط ==========
 function Step1Customer({ ar, setAr, en, setEn }) {
