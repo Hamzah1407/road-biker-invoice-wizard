@@ -128,7 +128,7 @@ export default function ThreeStepInvoiceWizard() {
             <input
               value={docNo}
               onChange={(e) => setDocNo(e.target.value)}
-              className="h-10 w-40 rounded-xl border border-neutral-300 px-3"
+              className="h-10 w-40 rounded-xl border border-neutral-300 px-3 text-center"
             />
           </div>
           <div className="flex items-center gap-2">
