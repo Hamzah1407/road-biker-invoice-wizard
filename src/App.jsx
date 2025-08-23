@@ -38,6 +38,8 @@ function nextDocNo(prefix) {
   } catch { return `${prefix}-${Date.now()}`; }
 }
 
+const VAT_RATE = 0.15;
+
 export default function ThreeStepInvoiceWizard() {
   const [step, setStep] = useState(1);
   const [docType, setDocType] = useState("invoice");
@@ -69,19 +71,27 @@ export default function ThreeStepInvoiceWizard() {
     }
   }, [docType]); // eslint-disable-line
 
-  // الحساب
+  // الحساب: سعر الوحدة مُدخل شامل ضريبة 15%
   const totals = useMemo(() => {
-    let totalSubCents = 0; let totalVatCents = 0; let totalGrandCents = 0;
+    let inclusiveCents = 0; // إجمالي شامل الضريبة
     rows.forEach((row) => {
-      const price = num(row.unitPrice); const qty = num(row.qty);
-      const unitVat = Math.round(price * 0.15 * 100) / 100; // 15%
-      const priceCents = Math.round(price * 100); const vatUnitCents = Math.round(unitVat * 100);
-      const rowSubCents = priceCents * qty; const rowVatCents = vatUnitCents * qty; const rowGrandCents = rowSubCents + rowVatCents;
-      totalSubCents += rowSubCents; totalVatCents += rowVatCents; totalGrandCents += rowGrandCents;
+      const priceCents = Math.round(num(row.unitPrice) * 100);
+      const qty = Math.max(num(row.qty), 0);
+      inclusiveCents += priceCents * qty;
     });
+
+    const subtotalCents = Math.round(inclusiveCents / (1 + VAT_RATE)); // قبل الضريبة
+    const vatCents = inclusiveCents - subtotalCents;                    // الضريبة المستخرجة
     const discountCents = toCents(num(discount));
-    const finalCents = Math.max(totalGrandCents - discountCents, 0);
-    return { totalSubCents, totalVatCents, totalGrandCents, discountCents, finalCents };
+    const finalCents = Math.max(subtotalCents + vatCents - discountCents, 0); // النهائي
+
+    return {
+      inclusiveCents,
+      subtotalCents,
+      vatCents,
+      discountCents,
+      finalCents,
+    };
   }, [rows, discount]);
 
   const title = useMemo(() => (DOC_TYPES.find((d) => d.id === docType)?.label || "—"), [docType]);
@@ -321,59 +331,51 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border border-neutral-300 rounded-xl overflow-hidden table-fixed">
           <colgroup>
-            <col style={{ width: "4%" }} />   {/* # */}
-            <col style={{ width: "14%" }} />  {/* Item No */}
-            <col style={{ width: "36%" }} />  {/* Item Name */}
-            <col style={{ width: "10%" }} />  {/* Unit */}
-            <col style={{ width: "10%" }} />  {/* Qty */}
-            <col style={{ width: "13%" }} />  {/* Unit Price */}
-            <col style={{ width: "13%" }} />  {/* Total */}
-            <col style={{ width: "6%" }} />   {/* Delete */}
+            <col style={{ width: "4%" }} />    {/* # */}
+            <col style={{ width: "12%" }} />   {/* Item No - أضيق */}
+            <col style={{ width: "38%" }} />   {/* Item Name - أوسع */}
+            <col style={{ width: "10%" }} />   {/* Unit */}
+            <col style={{ width: "10%" }} />   {/* Qty */}
+            <col style={{ width: "13%" }} />   {/* Unit Price */}
+            <col style={{ width: "13%" }} />   {/* Total */}
+            <col style={{ width: "6%" }} />    {/* Delete */}
           </colgroup>
           <thead>
             <tr className="bg-neutral-50 text-neutral-700">
-              <th className="print-bg text-right py-2 px-3">#</th>
-              <th className="print-bg text-right py-2 px-3">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
-              <th className="print-bg text-right py-2 px-3">اسم الصنف<br/><small className="text-xs text-neutral-500">Item Name</small></th>
-              <th className="print-bg text-right py-2 px-3">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small>حبة</th>
-              <th className="print-bg text-right py-2 px-3">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
-              <th className="print-bg text-right py-2 px-3">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
-              <th className="print-bg text-right py-2 px-3">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
-              <th className="print-bg text-right py-2 px-3">—</th>
+              <th className="print-bg text-center py-2 px-3">#</th>
+              <th className="print-bg text-center py-2 px-3">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
+              <th className="print-bg text-center py-2 px-3">اسم الصنف<br/><small className="text-xs text-neutral-500">Item Name</small></th>
+              <th className="print-bg text-center py-2 px-3">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small></th>
+              <th className="print-bg text-center py-2 px-3">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
+              <th className="print-bg text-center py-2 px-3">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
+              <th className="print-bg text-center py-2 px-3">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
+              <th className="print-bg text-center py-2 px-3">—</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, idx) => (
               <tr key={r.id} className="border-t border-neutral-200">
-                <td className="py-2 px-3">{idx + 1}</td>
+                <td className="py-2 px-3 text-center">{idx + 1}</td>
                 <td className="py-2 px-3">
-                  <input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})}
-                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                  <input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
                 </td>
                 <td className="py-2 px-3">
-                  <input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})}
-                         className="h-10 w-full rounded border border-neutral-300 px-3 text-right"/>
+                  <input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3 text-right"/>
                 </td>
-                <td className="py-2 px-3 w-32">
-                  <input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})}
-                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                <td className="py-2 px-3">
+                  <input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
                 </td>
-                <td className="py-2 px-3 w-28">
-                  <input type="number" min={0} value={r.qty}
-                         onChange={(e)=>updateRow(r.id,{qty:e.target.value})}
-                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                <td className="py-2 px-3">
+                  <input type="number" min={0} value={r.qty} onChange={(e)=>updateRow(r.id,{qty:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
                 </td>
-                <td className="py-2 px-3 w-36">
-                  <input type="number" min={0} step="0.01" value={r.unitPrice}
-                         onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})}
-                         className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                <td className="py-2 px-3">
+                  <input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
                 </td>
-                <td className="py-2 px-3 w-36">
-                  {fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}
+                <td className="py-2 px-3 text-center">
+                  {fromCents(Math.round(num(r.unitPrice)*100) * Math.max(num(r.qty),0))}
                 </td>
-                <td className="py-2 px-3 w-12">
-                  <button onClick={()=>removeRow(r.id)}
-                          className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50">
+                <td className="py-2 px-3">
+                  <button onClick={()=>removeRow(r.id)} className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50">
                     <Trash2 size={16}/>
                   </button>
                 </td>
@@ -384,18 +386,14 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
-          <Plus size={16} className="inline ms-1"/> إضافة صف
-        </button>
+        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"><Plus size={16} className="inline ms-1"/> إضافة صف</button>
       </div>
 
       <div className="rounded-xl border border-neutral-200 p-4 text-sm max-w-md ms-auto">
         <div className="flex items-center justify-between">
           <div className="text-neutral-700">خصم <span className="text-xs text-neutral-500">Discount</span></div>
           <div className="flex items-center gap-2">
-            <input type="number" min={0} step="0.01" value={discount}
-                   onChange={(e)=>setDiscount(e.target.value)}
-                   className="h-10 w-32 rounded border border-neutral-300 px-3"/>
+            <input type="number" min={0} step="0.01" value={discount} onChange={(e)=>setDiscount(e.target.value)} className="h-10 w-32 rounded border border-neutral-300 px-3"/>
             <span className="text-neutral-500">SAR</span>
           </div>
         </div>
@@ -408,7 +406,7 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
 function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, printedBy, docType }) {
   const isInvoice = docType === "invoice";
 
-  // ======== منطق الضمان بناءً على رقم الصنف ========
+  // ======== منطق الضمان ========
   const { showWarranty, arText, enText } = useMemo(() => {
     const normalize = (v) => String(v || "").trim().toUpperCase();
     const entered = rows.map((r) => normalize(r.itemNo)).filter((v) => v.length > 0);
@@ -417,9 +415,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
     const hasEligible = eligible.length > 0;
     const hasOther = entered.some((v) => !WARRANTY_CODES_UPPER.includes(v));
 
-    if (!hasEligible) {
-      return { showWarranty: false, arText: "", enText: "" };
-    }
+    if (!hasEligible) return { showWarranty: false, arText: "", enText: "" };
 
     if (!hasOther) {
       return {
@@ -434,7 +430,6 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
       .filter((x) => WARRANTY_CODES_UPPER.includes(normalize(x)));
     const listAr = presentCodesOriginal.join("، ");
     const listEn = presentCodesOriginal.join(", ");
-
     const pluralAr = presentCodesOriginal.length > 1 ? "للأصناف رقم: " : "للصنف رقم: ";
     const pluralEn = presentCodesOriginal.length > 1 ? "for item(s) #: " : "for item #: ";
 
@@ -513,13 +508,13 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
         </div>
       </div>
 
-      {/* الجدول + الإجماليات + QR — أعمدة مثبّتة، واسم الصنف أوسع */}
+      {/* الجدول + الإجماليات + QR — عناوين وسط، Item No أضيق */}
       <div className="bg-white">
         <table className="w-full text-sm border border-black table-fixed">
           <colgroup>
             <col style={{ width: "4%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "36%" }} /> {/* اسم الصنف */}
+            <col style={{ width: "12%" }} />  {/* Item No أضيق */}
+            <col style={{ width: "38%" }} />  {/* Item Name */}
             <col style={{ width: "10%" }} />
             <col style={{ width: "10%" }} />
             <col style={{ width: "13%" }} />
@@ -527,13 +522,13 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
           </colgroup>
           <thead>
             <tr>
-              <th className="print-bg border border-black py-2 px-2">#</th>
-              <th className="print-bg border border-black py-2 px-2">رقم الصنف<br/><small>Item No</small></th>
-              <th className="print-bg border border-black py-2 px-3 text-right">اسم الصنف<br/><small>Item Name</small></th>
-              <th className="print-bg border border-black py-2 px-2">الوحدة<br/><small>Unit</small></th>
-              <th className="print-bg border border-black py-2 px-2">الكمية<br/><small>Quantity</small></th>
-              <th className="print-bg border border-black py-2 px-2">سعر الوحدة<br/><small>Unit Price</small></th>
-              <th className="print-bg border border-black py-2 px-2">الإجمالي<br/><small>Total</small></th>
+              <th className="print-bg border border-black py-2 px-2 text-center">#</th>
+              <th className="print-bg border border-black py-2 px-2 text-center">رقم الصنف<br/><small>Item No</small></th>
+              <th className="print-bg border border-black py-2 px-3 text-center">اسم الصنف<br/><small>Item Name</small></th>
+              <th className="print-bg border border-black py-2 px-2 text-center">الوحدة<br/><small>Unit</small></th>
+              <th className="print-bg border border-black py-2 px-2 text-center">الكمية<br/><small>Quantity</small></th>
+              <th className="print-bg border border-black py-2 px-2 text-center">سعر الوحدة<br/><small>Unit Price</small></th>
+              <th className="print-bg border border-black py-2 px-2 text-center">الإجمالي<br/><small>Total</small></th>
             </tr>
           </thead>
           <tbody>
@@ -545,7 +540,9 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
                 <td className="border border-black py-2 px-2 text-center">{r.unit || "—"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.qty || "0"}</td>
                 <td className="border border-black py-2 px-2 text-center">{(num(r.unitPrice)||0).toFixed(2)}</td>
-                <td className="border border-black py-2 px-2 text-center">{fromCents(Math.round(num(r.unitPrice)*100) * num(r.qty))}</td>
+                <td className="border border-black py-2 px-2 text-center">
+                  {fromCents(Math.round(num(r.unitPrice)*100) * Math.max(num(r.qty),0))}
+                </td>
               </tr>
             ))}
 
@@ -560,11 +557,11 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
             </tr>
             <tr>
               <td className="border border-black py-2 px-2 text-center" colSpan={2}>الإجمالي قبل الضريبة<br/><small>Subtotal (before VAT)</small></td>
-              <td className="border border-black py-2 px-2 text-center">{fromCents(totals.totalSubCents)}</td>
+              <td className="border border-black py-2 px-2 text-center">{fromCents(totals.subtotalCents)}</td>
             </tr>
             <tr>
               <td className="border border-black py-2 px-2 text-center" colSpan={2}>ضريبة القيمة المضافة 15%<br/><small>VAT 15%</small></td>
-              <td className="border border-black py-2 px-2 text-center">{fromCents(totals.totalVatCents)}</td>
+              <td className="border border-black py-2 px-2 text-center">{fromCents(totals.vatCents)}</td>
             </tr>
             <tr>
               <td className="border border-black py-2 px-2 text-center font-semibold" colSpan={2}>الإجمالي النهائي<br/><small>Total (incl. VAT)</small></td>
