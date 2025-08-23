@@ -103,7 +103,7 @@ export default function ThreeStepInvoiceWizard() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-4">
         {/* الشريط العلوي: نوع المستند + ميتا الفاتورة */}
-        <div className="no-print flex flex-col gap-3">
+        <div className="no-print flex flex-col gap-3 w-100">
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
               {DOC_TYPES.map((d) => (
@@ -112,7 +112,7 @@ export default function ThreeStepInvoiceWizard() {
             </div>
 
             {/* حقول رقم/تاريخ/عملة بجانب الاختيار */}
-            <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm w-100">
+            <div className="flex items-center gap-2 bg-white rounded-2xl p-1 border border-neutral-200 shadow-sm">
               <div className="flex items-center gap-2">
                 <label className="text-xs text-neutral-600">Invoice No</label>
                 <input value={docNo} onChange={(e)=>setDocNo(e.target.value)} className="h-10 w-40 rounded-xl border border-neutral-300 px-3" />
