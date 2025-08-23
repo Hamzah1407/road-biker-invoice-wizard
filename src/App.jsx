@@ -335,7 +335,7 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
               <th className="print-bg text-right py-2 px-3">#</th>
               <th className="print-bg text-right py-2 px-3">رقم الصنف<br/><small className="text-xs text-neutral-500">Item No</small></th>
               <th className="print-bg text-right py-2 px-3">اسم الصنف<br/><small className="text-xs text-neutral-500">Item Name</small></th>
-              <th className="print-bg text-right py-2 px-3">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small></th>
+              <th className="print-bg text-right py-2 px-3">الوحدة<br/><small className="text-xs text-neutral-500">Unit</small>حبة</th>
               <th className="print-bg text-right py-2 px-3">الكمية<br/><small className="text-xs text-neutral-500">Quantity</small></th>
               <th className="print-bg text-right py-2 px-3">سعر الوحدة<br/><small className="text-xs text-neutral-500">Unit Price</small></th>
               <th className="print-bg text-right py-2 px-3">الإجمالي<br/><small className="text-xs text-neutral-500">Total</small></th>
