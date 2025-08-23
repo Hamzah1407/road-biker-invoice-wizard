@@ -159,30 +159,56 @@ export default function ThreeStepInvoiceWizard() {
         </div>
 
         {/* أزرار التحكم */}
-        <div className="no-print flex items-center justify-between gap-2">
-          <button
-            disabled={step === 1}
-            onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-            className={`h-10 px-4 rounded-xl border bg-white border-neutral-300 ${step === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"}`}
-          >
-            <ArrowRight className="inline me-2" size={16} />
-            السابق
-          </button>
-          {step < 3 ? (
-            <button onClick={() => setStep((s) => s + 1)} className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2">
-              <FilePlus2 size={18} /> التالي
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button onClick={() => window.print()} className="h-10 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center gap-2">
-                <Printer size={18} /> طباعة
-              </button>
-              <button onClick={() => setStep(1)} className="h-10 px-4 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
-                <ArrowLeft className="inline me-2" size={16} /> تعديل
-              </button>
-            </div>
-          )}
-        </div>
+       {/* أزرار التحكم */}
+<div className="no-print w-full">
+  {step < 3 ? (
+    // السابق + التالي على كامل العرض
+    <div className="grid grid-cols-2 gap-3 w-full">
+      <button
+        disabled={step === 1}
+        onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+        className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
+                   hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ArrowRight size={18} /> السابق
+      </button>
+
+      <button
+        onClick={() => setStep((s) => s + 1)}
+        className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
+                   hover:bg-green-700"
+      >
+        التالي <FilePlus2 size={18} />
+      </button>
+    </div>
+  ) : (
+    // في الخطوة الثالثة: السابق باللون الأحمر مع أزرار الطباعة/التعديل في العمود الثاني
+    <div className="grid grid-cols-2 gap-3 w-full">
+      <button
+        onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+        className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
+      >
+        <ArrowRight size={18} /> السابق
+      </button>
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => window.print()}
+          className="flex-1 h-12 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center justify-center gap-2"
+        >
+          <Printer size={18} /> طباعة
+        </button>
+        <button
+          onClick={() => setStep(1)}
+          className="flex-1 h-12 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50 flex items-center justify-center gap-2"
+        >
+          <ArrowLeft size={18} /> تعديل
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+
       </div>
     </div>
   );
