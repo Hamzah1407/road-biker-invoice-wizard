@@ -537,7 +537,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
                 <td className="border border-black py-2 px-2 text-center">{idx+1}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.itemNo || "—"}</td>
                 <td className="border border-black py-2 px-3 text-right">{r.itemName || "—"}</td>
-                <td className="border border-black py-2 px-2 text-center">{r.unit || "—"}</td>
+                <td className="border border-black py-2 px-2 text-center">{r.unit || "حبة"}</td>
                 <td className="border border-black py-2 px-2 text-center">{r.qty || "0"}</td>
                 <td className="border border-black py-2 px-2 text-center">{(num(r.unitPrice)||0).toFixed(2)}</td>
                 <td className="border border-black py-2 px-2 text-center">
