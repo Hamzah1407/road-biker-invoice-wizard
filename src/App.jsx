@@ -93,6 +93,19 @@ export default function ThreeStepInvoiceWizard() {
 
   const title = useMemo(() => (DOC_TYPES.find((d) => d.id === docType)?.label || "—"), [docType]);
 
+  // جعل اسم ملف الطباعة = رقم الفاتورة
+  function handlePrint() {
+    try {
+      const prev = document.title;
+      const safe = String(docNo || "invoice").replace(/[^\w\-]+/g, "_");
+      document.title = safe;
+      window.print();
+      setTimeout(() => { document.title = prev; }, 800);
+    } catch {
+      window.print();
+    }
+  }
+
   return (
     <div dir="rtl" className="min-h-screen bg-neutral-100 text-neutral-900 py-6">
       <style>{`
@@ -180,35 +193,46 @@ export default function ThreeStepInvoiceWizard() {
         {/* أزرار التحكم */}
         <div className="no-print w-full">
           {step < 3 ? (
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <button
-                disabled={step === 1}
-                onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-                className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
-                           hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowRight size={18} /> السابق
-              </button>
+            step === 1 ? (
+              // الخطوة الأولى: إظهار "التالي" فقط (بدون السابق)
+              <div className="grid grid-cols-1 gap-3 w-full">
+                <button
+                  onClick={() => setStep(2)}
+                  className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2 hover:bg-green-700"
+                >
+                  التالي <FilePlus2 size={18} />
+                </button>
+              </div>
+            ) : (
+              // الخطوة الثانية: السابق + التالي
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setStep(1)}
+                  className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
+                >
+                  <ArrowRight size={18} /> السابق
+                </button>
 
-              <button
-                onClick={() => setStep((s) => s + 1)}
-                className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
-                           hover:bg-green-700"
-              >
-                التالي <FilePlus2 size={18} />
-              </button>
-            </div>
+                <button
+                  onClick={() => setStep(3)}
+                  className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2 hover:bg-green-700"
+                >
+                  التالي <FilePlus2 size={18} />
+                </button>
+              </div>
+            )
           ) : (
+            // الخطوة الثالثة: السابق + طباعة (واسم الملف = رقم الفاتورة)
             <div className="grid grid-cols-2 gap-3 w-full">
               <button
-                onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+                onClick={() => setStep(2)}
                 className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
               >
                 <ArrowRight size={18} /> السابق
               </button>
 
               <button
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="h-12 rounded-xl bg-neutral-900 hover:bg-black text-white flex items-center justify-center gap-2"
               >
                 <Printer size={18} /> طباعة
@@ -323,6 +347,8 @@ function FormRow({ label, children, labelAlign = "right" }) {
 
 /* =================== خطوة 2: البنود =================== */
 function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount }) {
+  const isSingle = rows.length === 1;
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
@@ -350,40 +376,53 @@ function Step2Items({ rows, addRow, removeRow, updateRow, discount, setDiscount 
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={r.id} className="border-t border-neutral-200">
-                <td className="py-2 px-3 text-center">{idx + 1}</td>
-                <td className="py-2 px-3">
-                  <input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
-                </td>
-                <td className="py-2 px-3">
-                  <input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3 text-right"/>
-                </td>
-                <td className="py-2 px-3">
-                  <input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
-                </td>
-                <td className="py-2 px-3">
-                  <input type="number" min={0} value={r.qty} onChange={(e)=>updateRow(r.id,{qty:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
-                </td>
-                <td className="py-2 px-3">
-                  <input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
-                </td>
-                <td className="py-2 px-3 text-center">
-                  {fromCents(Math.round(num(r.unitPrice)*100) * Math.max(num(r.qty),0))}
-                </td>
-                <td className="py-2 px-3">
-                  <button onClick={()=>removeRow(r.id)} className="h-9 w-9 grid place-items-center rounded border bg-white border-neutral-300 hover:bg-neutral-50">
-                    <Trash2 size={16}/>
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, idx) => {
+              const disabled = isSingle; // تعطيل الحذف إن كان صف واحد
+              return (
+                <tr key={r.id} className="border-t border-neutral-200">
+                  <td className="py-2 px-3 text-center">{idx + 1}</td>
+                  <td className="py-2 px-3">
+                    <input value={r.itemNo} onChange={(e)=>updateRow(r.id,{itemNo:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input value={r.itemName} onChange={(e)=>updateRow(r.id,{itemName:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3 text-right"/>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input value={r.unit} onChange={(e)=>updateRow(r.id,{unit:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input type="number" min={0} value={r.qty} onChange={(e)=>updateRow(r.id,{qty:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input type="number" min={0} step="0.01" value={r.unitPrice} onChange={(e)=>updateRow(r.id,{unitPrice:e.target.value})} className="h-10 w-full rounded border border-neutral-300 px-3"/>
+                  </td>
+                  <td className="py-2 px-3 text-center">
+                    {fromCents(Math.round(num(r.unitPrice)*100) * Math.max(num(r.qty),0))}
+                  </td>
+                  <td className="py-2 px-3">
+                    <button
+                      disabled={disabled}
+                      onClick={()=> !disabled && removeRow(r.id)}
+                      className={`h-9 w-9 grid place-items-center rounded border text-white
+                        ${disabled
+                          ? "bg-red-300 border-red-300 opacity-60 cursor-not-allowed"
+                          : "bg-red-600 border-red-600 hover:bg-red-700"}`}
+                      title={disabled ? "لا يمكن حذف الصف الوحيد" : "حذف الصف"}
+                    >
+                      <Trash2 size={16}/>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50"><Plus size={16} className="inline ms-1"/> إضافة صف</button>
+        <button onClick={addRow} className="h-10 px-3 rounded-xl border bg-white border-neutral-300 hover:bg-neutral-50">
+          <Plus size={16} className="inline ms-1"/> إضافة صف
+        </button>
       </div>
 
       <div className="rounded-xl border border-neutral-200 p-4 text-sm max-w-md ms-auto">
