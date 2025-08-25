@@ -180,25 +180,38 @@ export default function ThreeStepInvoiceWizard() {
         {/* أزرار التحكم */}
         <div className="no-print w-full">
           {step < 3 ? (
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <button
-                disabled={step === 1}
-                onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
-                className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
-                           hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowRight size={18} /> السابق
-              </button>
+            step === 1 ? (
+              // الخطوة الأولى: إزالة زر "التالي" وإبقاء "السابق" فقط بعرض كامل (ومعطل)
+              <div className="w-full">
+                <button
+                  disabled
+                  className="h-12 w-full rounded-xl bg-red-600 text-white flex items-center justify-center gap-2
+                             opacity-50 cursor-not-allowed"
+                >
+                  <ArrowRight size={18} /> السابق
+                </button>
+              </div>
+            ) : (
+              // باقي الخطوات قبل المعاينة: السابق + التالي
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
+                  className="h-12 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 hover:bg-red-700"
+                >
+                  <ArrowRight size={18} /> السابق
+                </button>
 
-              <button
-                onClick={() => setStep((s) => s + 1)}
-                className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
-                           hover:bg-green-700"
-              >
-                التالي <FilePlus2 size={18} />
-              </button>
-            </div>
+                <button
+                  onClick={() => setStep((s) => s + 1)}
+                  className="h-12 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2
+                             hover:bg-green-700"
+                >
+                  التالي <FilePlus2 size={18} />
+                </button>
+              </div>
+            )
           ) : (
+            // الخطوة الثالثة: السابق + طباعة
             <div className="grid grid-cols-2 gap-3 w-full">
               <button
                 onClick={() => setStep((s) => (s > 1 ? s - 1 : s))}
@@ -426,7 +439,7 @@ function Step3Preview({ title, docNo, docDate, currency, ar, en, rows, totals, p
       .map((r) => r.itemNo)
       .filter((x) => WARRANTY_CODES_UPPER.includes(normalize(x)));
     const listAr = presentCodesOriginal.join("، ");
-    const listEn = presentCodesOriginal.join(", ");
+       const listEn = presentCodesOriginal.join(", ");
     const pluralAr = presentCodesOriginal.length > 1 ? "للأصناف رقم: " : "للصنف رقم: ";
     const pluralEn = presentCodesOriginal.length > 1 ? "for item(s) #: " : "for item #: ";
 
